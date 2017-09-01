@@ -303,8 +303,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 990561eafe4c94a48a5f1f60c34e3467, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+  mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
   numOfFeaturePoints: 10
+  material: {fileID: 2100000, guid: 6a62c8605edf6854b830e07dd4e62ea1, type: 2}
 --- !u!4 &1574002123
 Transform:
   m_ObjectHideFlags: 0
