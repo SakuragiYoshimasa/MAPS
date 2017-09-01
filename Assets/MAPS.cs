@@ -4,9 +4,9 @@ using UnityEngine;
 
 //definitions of structures
 public struct MapsMesh {
-	List<Vector3> P;
-	Topologies K;
-	List<int> featurePoints;
+	public List<Vector3> P;
+	public Topologies K;
+	public List<int> featurePoints;
 
 	public MapsMesh (List<Vector3> ps, Topologies topo, List<int> fps){
 		P = ps;
@@ -16,9 +16,9 @@ public struct MapsMesh {
 }
 
 public struct Topologies {
-	List<Vertex> vertices;
-	List<Edge> edges;
-	List<Triangle> triangles;
+	public List<Vertex> vertices;
+	public List<Edge> edges;
+	public List<Triangle> triangles;
 
 	public Topologies (List<Vertex> vs, List<Edge> es, List<Triangle> ts){
 		vertices = vs;
@@ -28,7 +28,7 @@ public struct Topologies {
 }
 
 public struct Vertex {
-	int ind;
+	public int ind;
 
 	public Vertex (int i){
 		ind = i;
@@ -36,8 +36,8 @@ public struct Vertex {
 }
 
 public struct Edge {
-	int ind1;
-	int ind2;
+	public int ind1;
+	public int ind2;
 
 	public Edge (int i1, int i2){
 		ind1 = i1;
@@ -46,14 +46,21 @@ public struct Edge {
 }
 
 public struct Triangle {
-	int ind1;
-	int ind2;
-	int ind3;
+	public int ind1;
+	public int ind2;
+	public int ind3;
 
 	public Triangle (int i1, int i2, int i3){
 		ind1 = i1;
 		ind2 = i2;
 		ind3 = i3;
+	}
+
+	public int contains(int ind){
+		if(ind == ind1) return 1;
+		if(ind == ind2) return 2;
+		if(ind == ind3) return 3;
+		return 0;
 	}
 }
 
@@ -125,6 +132,55 @@ public class MAPS : MonoBehaviour {
 	}
 
 	bool levelDown(){
+
+
+		//extract feature points from candidate
+		List<int> candidate = new List<int>();
+
+		for(int i = 0; i < mmesh.K.vertices.Count; i++){
+			if(!mmesh.featurePoints.Contains(mmesh.K.vertices[i].ind)){
+				candidate.Add(mmesh.K.vertices[i].ind);
+			}
+		}
+
+		if(candidate.Count == 0){
+			return false;
+		}
+
+		//calculate the priorities of candidate.
+		List<float> areas = new List<float>();
+		List<float> curvatures = new List<float>();
+		List<float> priorities = new List<float>();
+		float lambda = 0.5f;
+
+		
+		for(int i = 0; i < candidate.Count; i++){
+			
+			float area = 0;
+			float curvature = 360f;
+
+			for(int j = 0; j < mmesh.K.triangles.Count; j++){
+
+				int pos = mmesh.K.triangles[j].contains(candidate[i]);
+				
+				if(pos != 0){
+					
+				}
+			}
+
+			areas.Add(area);
+			curvatures.Add(curvature);
+		}
+
+		for(int i = 0; i < candidate.Count; i++){
+			priorities.Add();
+		}
+				
+		//by the priorities, select the maximum independent set
+
+		//remove the maximum independent set and retrianglation
+
+
 		return false;
 	}
 
