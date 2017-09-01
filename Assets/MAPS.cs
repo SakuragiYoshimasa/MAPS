@@ -172,20 +172,18 @@ public class MAPS : MonoBehaviour {
 		float maxCurvature = 0f;
 
 		//Calculate areas and apploximate gauss curvatures
-		//Debug.Log("Candidate" + candidate.Count.ToString());
 		for(int i = 0; i < candidate.Count; i++){
 			
 			float area = 0;
 			float curvature = 360f;
 			List<Triangle> star = new List<Triangle>();
-			//Debug.Log(candidate[i]);
+			
 			for(int j = 0; j < mmesh.K.triangles.Count; j++){
 				
 				int pos = mmesh.K.triangles[j].contains(candidate[i]);
 
 				if(pos != 0){
 					int[] triangle = mmesh.K.triangles[j].getT(pos);
-					//Debug.Log(triangle[0].ToString() + ":" + triangle[1].ToString() + ":" + triangle[2].ToString());
 
 					star.Add(new Triangle(triangle[0], triangle[1], triangle[2]));
 
@@ -200,9 +198,9 @@ public class MAPS : MonoBehaviour {
 					curvature -= Vector3.Angle(a, b);
 				}
 			}
+
 			//Approcimate gauss curvature
 			curvature /= area / 3.0f / 180.0f * Mathf.PI;
-			//Debug.Log(star.Count());
 			areas.Add(area);
 			curvatures.Add(curvature);
 			stars.Add(candidate[i] ,star);
@@ -236,113 +234,68 @@ public class MAPS : MonoBehaviour {
 				}
 			}
 		}
-		//end construct the maximum independent
-		//OK
-
-		//remove the maximum independent
+		
 		//flatten and retriangulation
+		//remove the maximum independent
+		bool removed = false;
+
 		for(int i = 0; i < remove_indices.Count(); i++){
 
 			var star = stars[remove_indices[i]];
 			bool on_boundary = false;
-
+			bool flag = true;
 			bool[] used = new bool[star.Count];
+
 			for(int r = 0; r < star.Count; r++){
 				used[r] = false;
 			}
 
+			if(star.Count < 3){
+				continue;
+			}
+
 			//find a ring
 			var firstT = star[0];
-			
-			//star.RemoveAt(0);
 			used[0] = true;
-			//Debug.Log(star.Count());
-			var ring = new List<int>();
 
+			var ring = new List<int>();
 			ring.Add(firstT.ind2);
-			int bef = firstT.ind2;
-			bool flag = true;
 			
-			if(star.Count == 1){
-				flag = false;
-				//Debug.Log("BAD STAR");
-				ring.Add(firstT.ind3);
-			}
 			while(flag){
-				if(!used.Contains(false)){ 
-					
-					for(int s = 0; s< star.Count; s++){
-						//Debug.Log("GOOD" + star[s].ind1.ToString() + ":" + star[s].ind2.ToString() + ":" + star[s].ind3.ToString());
-					}
-					break;
-				}
+				if(!used.Contains(false)) break;
+				
 				for(int n = 0; n < star.Count(); n++){
-					if(!used[n] && star[n].ind2 == bef){
+
+					if(!used[n] && star[n].ind2 == ring.Last()){
 						ring.Add(star[n].ind3);
-						bef = star[n].ind3;
-						
-						if(star[n].ind3 == firstT.ind3){
-							 flag = false;
-						}
-						//star.RemoveAt(n);
+						if(star[n].ind3 == firstT.ind3)  flag = false;
 						used[n] = true;
 						break;
 					}
 
-					if(!used[n] && star[n].ind3 == bef){
+					if(!used[n] && star[n].ind3 == ring.Last()){
 						ring.Add(star[n].ind2);
-						bef = star[n].ind2;
-						
 						if(star[n].ind2 == firstT.ind3) flag = false;
-						//star.RemoveAt(n);
 						used[n] = true;
 						break;
 					}
 					
 					if(n == star.Count() - 1) {
-						//flag = false;
+						flag = false;
 						on_boundary = true;
-						//ring.Clear();
-						int temp = firstT.ind2;
-						firstT.ind2 = firstT.ind3;
-						firstT.ind3 = temp;
-						ring.Add(firstT.ind2);
-						bef = firstT.ind2;
-
-						
-						
-						for(int s = 0; s< star.Count; s++){
-							//Debug.Log("BAD and reset:" + star[s].ind1.ToString() + ":" + star[s].ind2.ToString() + ":" + star[s].ind3.ToString());
-						}
 					}
 				}
 			}		
+			if(on_boundary || ring.Last() != firstT.ind3) continue;
 			
-			//Remove triangle and remove vertex from mmesh
-			star = stars[remove_indices[i]];
-			foreach(Triangle T in star){
-				for(int j = 0; j < mmesh.K.triangles.Count(); j++){
-					if(mmesh.K.triangles[j].isEqual(T)){
-						mmesh.K.triangles.RemoveAt(j);
-						j--;
-					}
-				}
-			}
-
-			//mmesh.K.vertices.RemoveAt(mmesh.K.vertices.Find(remove_indices[i]));
-			//Debug.Log("before add");
 			//OK
 			//Add new triangles
 			//Fistly, using conformal map z^a, 1 ring will be flattened
-			
+			Vector3 pi = mmesh.P[remove_indices[i]];
 			List<Vector3> ring_vs = new List<Vector3>();
 
-			foreach(int ind in ring){
-				ring_vs.Add(mmesh.P[ind]);
-			}
-
-			Vector3 pi = mmesh.P[remove_indices[i]];
-
+			foreach(int ind in ring) ring_vs.Add(mmesh.P[ind]);
+			
 			List<float> thetas = new List<float>();
 
 			for(int l = 0; l < ring.Count(); l++){
@@ -360,15 +313,11 @@ public class MAPS : MonoBehaviour {
 				float phai = temp_sum_theta * (on_boundary ? Mathf.PI : Mathf.PI * 2.0f) / sum_theta;
 				mapped_ring.Add(l, new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
 			}
-			//Debug.Log("Second");
+			
 			//Secondly, retriangulation by a constrained Delauney triangulation
 			//In Test, implementation is easy one.
-			//OK
-			Debug.Log("ring:" + ring.Count.ToString() + " star:" + star.Count.ToString());
-			if(ring.Count == 3){
-				mmesh.K.triangles.Add(new Triangle(ring[0], ring[1], ring[2]));
-			}
-			if(ring.Count > 3){
+			
+			if(ring.Count >= 3){
 				int fow = 1;
 				int back = 1;
 				int p1 = ring[0];
@@ -388,15 +337,31 @@ public class MAPS : MonoBehaviour {
 						p3 = ring[ring.Count() - back];
 					}
 				}
+			}else{
+				continue;
 			}
+
+			//Remove triangle and remove vertex from mmesh
+			star = stars[remove_indices[i]];
+			foreach(Triangle T in star){
+				for(int j = 0; j < mmesh.K.triangles.Count(); j++){
+					if(mmesh.K.triangles[j].isEqual(T)){
+						mmesh.K.triangles.RemoveAt(j);
+						j--;
+					}
+				}
+			}
+			removed = true;
 		}
-		return true;
-	}
+		return removed;
+}
 
 	// Use this for initialization
 	void Start () {
 		mmesh = TransformMesh2MapsMesh(mesh, numOfFeaturePoints);
-		levelDown();
+		while(levelDown()){
+			Debug.Log("Level Down");
+		}
 		Mesh m = rebuiltMesh();
 
 		GameObject go = new GameObject();
