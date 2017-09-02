@@ -3,16 +3,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
+//Referenced MAPS: Multiresolution adaptive parameterization of surfaces.
+//Easy implementation
+//I haven't impelemnted smoothing and feature edges yet.
+
 //definitions of structures
+//P is a set of original positions of vertices.
+//K is a toopology. Now I implemented not using edge information.
+//feature points are selected randomly. TODO: It should be seleced to share between two meshes.
+//bijection phai(K^L) -> phai(K^l). If it is null, it mean identity.
 public struct MapsMesh {
 	public List<Vector3> P;
 	public Topologies K;
 	public List<int> featurePoints;
+	public Dictionary<int, Dictionary<int, float>> bijection;
 
 	public MapsMesh (List<Vector3> ps, Topologies topo, List<int> fps){
 		P = ps;
 		K = topo;
 		featurePoints = fps;
+		bijection = new Dictionary<int, Dictionary<int, float>>(); 
+
+		for(int i = 0; i < P.Count; i++){
+			bijection.Add(i, new Dictionary<int, float>());
+		}
 	}
 }
 
@@ -86,7 +100,6 @@ public class MAPS : MonoBehaviour {
 	public Mesh mesh;
 	public int numOfFeaturePoints; 
 	public Material material;
-
 	private MapsMesh mmesh;
 
 	MapsMesh TransformMesh2MapsMesh(Mesh mesh, int U){
@@ -167,7 +180,7 @@ public class MAPS : MonoBehaviour {
 		List<float> curvatures = new List<float>();
 		Dictionary<int ,float> priorities = new Dictionary<int, float>();
 		Dictionary<int ,List<Triangle>> stars = new Dictionary<int ,List<Triangle>>();
-		float lambda = 0.5f;
+		float lambda = 0.8f;
 		float maxArea = 0f;
 		float maxCurvature = 0f;
 
@@ -194,7 +207,7 @@ public class MAPS : MonoBehaviour {
 					Vector3 a = p1 - p0;
 					Vector3 b = p2 - p0;
 
-					area += Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.25f;
+					area += Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
 					curvature -= Vector3.Angle(a, b);
 				}
 			}
@@ -239,6 +252,12 @@ public class MAPS : MonoBehaviour {
 		//remove the maximum independent
 		bool removed = false;
 
+		for(int i = 0; i < mmesh.P.Count; i++){
+			if(!remove_indices.Contains(i)){
+				mmesh.bijection[i] = mmesh.bijection[i];
+			}
+		}
+
 		for(int i = 0; i < remove_indices.Count(); i++){
 
 			var star = stars[remove_indices[i]];
@@ -246,19 +265,13 @@ public class MAPS : MonoBehaviour {
 			bool flag = true;
 			bool[] used = new bool[star.Count];
 
-			for(int r = 0; r < star.Count; r++){
-				used[r] = false;
-			}
-
-			if(star.Count < 3){
-				continue;
-			}
-
+			for(int r = 0; r < star.Count; r++) used[r] = false;
+			if(star.Count < 3) continue;
+			
 			//find a ring
 			var firstT = star[0];
-			used[0] = true;
-
 			var ring = new List<int>();
+			used[0] = true;
 			ring.Add(firstT.ind2);
 			
 			while(flag){
@@ -288,35 +301,28 @@ public class MAPS : MonoBehaviour {
 			}		
 			if(on_boundary || ring.Last() != firstT.ind3) continue;
 			
-			//OK
+
 			//Add new triangles
 			//Fistly, using conformal map z^a, 1 ring will be flattened
 			Vector3 pi = mmesh.P[remove_indices[i]];
 			List<Vector3> ring_vs = new List<Vector3>();
-
-			foreach(int ind in ring) ring_vs.Add(mmesh.P[ind]);
-			
 			List<float> thetas = new List<float>();
-
-			for(int l = 0; l < ring.Count(); l++){
-				thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - pi, ring_vs[l + 1 != ring.Count() ? l + 1 : 0]));
-			}
-
-			float sum_theta = thetas.Sum();
-			
 			Dictionary<int, Vector2> mapped_ring = new Dictionary<int, Vector2>();
-
+			foreach(int ind in ring) ring_vs.Add(mmesh.P[ind]);
+			for(int l = 0; l < ring.Count(); l++) thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - pi, ring_vs[l + 1 != ring.Count() ? l + 1 : 0]));
+			float sum_theta = thetas.Sum();
 			float temp_sum_theta = 0f;
+
 			for(int l = 0; l < ring.Count(); l++){
 				temp_sum_theta += thetas[l];
 				float r = (pi - ring_vs[0]).magnitude;
 				float phai = temp_sum_theta * (on_boundary ? Mathf.PI : Mathf.PI * 2.0f) / sum_theta;
-				mapped_ring.Add(l, new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
+				mapped_ring.Add(ring[l], new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
 			}
 			
 			//Secondly, retriangulation by a constrained Delauney triangulation
 			//In Test, implementation is easy one.
-			
+			List<Triangle> added_triangles = new List<Triangle>();
 			if(ring.Count >= 3){
 				int fow = 1;
 				int back = 1;
@@ -325,6 +331,7 @@ public class MAPS : MonoBehaviour {
 				int p3 = ring[ring.Count() - back];
 				while(fow < ring.Count() - back){
 					mmesh.K.triangles.Add(new Triangle(p1, p2, p3));
+					added_triangles.Add(new Triangle(p1, p2, p3));
 					if(fow == back){
 						fow++;
 						p1 = p2;
@@ -341,7 +348,7 @@ public class MAPS : MonoBehaviour {
 				continue;
 			}
 
-			//Remove triangle and remove vertex from mmesh
+			//Finally, remove triangle and remove vertex from mmesh
 			star = stars[remove_indices[i]];
 			foreach(Triangle T in star){
 				for(int j = 0; j < mmesh.K.triangles.Count(); j++){
@@ -351,23 +358,106 @@ public class MAPS : MonoBehaviour {
 					}
 				}
 			}
+
+			//Pattern 2
+			//When the previous bijection of removed vertex is null,
+			//Updated bijection of it will be constructed by triangles whrere it on in conformed mapped star.
+			//Detection by cross
+			bool found = false;
+			if(mmesh.bijection[remove_indices[i]].Count == 0){
+				foreach(Triangle T in added_triangles){
+					Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
+					if(checkContain(points, Vector2.zero)){
+		
+						found = true;
+
+						//calc barycentric coordinates alpha, beta, gamma.
+						//http://www.osaka-c.ed.jp/shijonawate/pdf/yuumeimondai/vector_4.pdf
+						//because of conformal mapped pi = (0,0)
+						//Area Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
+						Vector3 param = new Vector3(calcArea(points[1], points[2]), calcArea(points[2], points[0]), calcArea(points[0], points[1]));
+						Vector3 normalized_parmas = param.normalized;
+						mmesh.bijection[remove_indices[i]].Add(T.ind1, normalized_parmas[0]);
+						mmesh.bijection[remove_indices[i]].Add(T.ind2, normalized_parmas[1]);
+						mmesh.bijection[remove_indices[i]].Add(T.ind3, normalized_parmas[2]);
+					}
+				}
+			}
+
+			//Pattern3;
+			foreach(KeyValuePair<int, Dictionary<int, float>> kv in mmesh.bijection){
+				//if removed vertex is used for some construction, recalc the construction
+				//https://www.chart.co.jp/subject/sugaku/suken_tsushin/74/74-1.pdf
+				if(kv.Value.ContainsKey(remove_indices[i])){
+					Vector3 recalced_p = mmesh.P[kv.Key];
+
+					//Recalc mapped_ring centerd recalced_p 
+					List<float> thetas_re = new List<float>();
+					Dictionary<int, Vector2> mapped_ring_re = new Dictionary<int, Vector2>();
+					foreach(int ind in ring) ring_vs.Add(mmesh.P[ind]);
+					for(int l = 0; l < ring.Count(); l++) thetas_re.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - recalced_p, ring_vs[l + 1 != ring.Count() ? l + 1 : 0]));
+					float sum_theta_re = thetas.Sum();
+					float temp_sum_theta_re = 0f;
+
+					for(int l = 0; l < ring.Count(); l++){
+						temp_sum_theta_re += thetas_re[l];
+						float r = (recalced_p - ring_vs[0]).magnitude;
+						float phai = temp_sum_theta_re * Mathf.PI * 2.0f / sum_theta_re;
+						mapped_ring_re.Add(ring[l], new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
+					}
+
+					//find triangle which contain recalc_p
+					foreach(Triangle T in added_triangles){
+						Vector2[] points = new Vector2[3]{mapped_ring_re[T.ind1], mapped_ring_re[T.ind2], mapped_ring_re[T.ind3]};
+						if(checkContain(points, Vector2.zero)){
+			
+							found = true;
+
+							//calc barycentric coordinates alpha, beta, gamma.
+							//http://www.osaka-c.ed.jp/shijonawate/pdf/yuumeimondai/vector_4.pdf
+							//because of conformal mapped pi = (0,0)
+							//Area Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
+							Vector3 param = new Vector3(calcArea(points[1], points[2]), calcArea(points[2], points[0]), calcArea(points[0], points[1]));
+							Vector3 normalized_parmas = param.normalized;
+				
+							mmesh.bijection[kv.Key].Clear();
+							mmesh.bijection[kv.Key].Add(T.ind1, normalized_parmas[0]);
+							mmesh.bijection[kv.Key].Add(T.ind2, normalized_parmas[1]);
+							mmesh.bijection[kv.Key].Add(T.ind3, normalized_parmas[2]);
+						}
+					}
+				}
+			}
+
+			if(!found){
+				Debug.Log("Found!!");
+			}else{
+				Debug.Log("Not Found!");
+			}
+
 			removed = true;
 		}
 		return removed;
-}
+	}
+
+	bool checkContain(Vector2[] tri, Vector2 p){
+		bool sign1 = Vector3.Cross(tri[0] - tri[1], tri[0] - p).z < 0;
+		bool sign2 = Vector3.Cross(tri[1] - tri[2], tri[1] - p).z < 0;
+		bool sign3 = Vector3.Cross(tri[2] - tri[0], tri[2] - p).z < 0;
+		return sign1 && sign2 && sign3;
+	}
+
+	float calcArea(Vector2 a, Vector2 b){
+		return Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
+	}
+	
 
 	// Use this for initialization
 	void Start () {
 		mmesh = TransformMesh2MapsMesh(mesh, numOfFeaturePoints);
-		while(levelDown()){
-			Debug.Log("Level Down");
-		}
+		
 		Mesh m = rebuiltMesh();
-
-		GameObject go = new GameObject();
-		var mf = go.AddComponent<MeshFilter>();
-		var mr = go.AddComponent<MeshRenderer>();
-		mr.material = material;
+		var mf = GetComponent<MeshFilter>();
 		mf.mesh = m;
 	}
 
@@ -395,6 +485,13 @@ public class MAPS : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		
+		if(Input.GetKeyUp(KeyCode.Space)){
+			levelDown();
+			Debug.Log("Level Down");
+			Mesh m = rebuiltMesh();
+
+			var mf = GetComponent<MeshFilter>();
+			mf.mesh = m;
+		}
 	}
 }
