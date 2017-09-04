@@ -368,7 +368,7 @@ public class MAPS : MonoBehaviour {
 				foreach(Triangle T in added_triangles){
 					Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
 					if(checkContain(points, Vector2.zero)){
-		
+						if(found) Debug.Log("Bad Alrogi pattern2");
 						found = true;
 
 						//calc barycentric coordinates alpha, beta, gamma.
@@ -383,20 +383,28 @@ public class MAPS : MonoBehaviour {
 					}
 				}
 			}
+			if(found){
+				Debug.Log("Found!!");
+			}else{
+				Debug.Log("Not Found!");
+			}
+			
 
 			//Pattern3;
+			
 			foreach(KeyValuePair<int, Dictionary<int, float>> kv in mmesh.bijection){
 				//if removed vertex is used for some construction, recalc the construction
 				//https://www.chart.co.jp/subject/sugaku/suken_tsushin/74/74-1.pdf
 				if(kv.Value.ContainsKey(remove_indices[i])){
+
+					found = false;
 					Vector3 recalced_p = mmesh.P[kv.Key];
 
 					//Recalc mapped_ring centerd recalced_p 
 					List<float> thetas_re = new List<float>();
 					Dictionary<int, Vector2> mapped_ring_re = new Dictionary<int, Vector2>();
-					foreach(int ind in ring) ring_vs.Add(mmesh.P[ind]);
 					for(int l = 0; l < ring.Count(); l++) thetas_re.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - recalced_p, ring_vs[l + 1 != ring.Count() ? l + 1 : 0]));
-					float sum_theta_re = thetas.Sum();
+					float sum_theta_re = thetas_re.Sum();
 					float temp_sum_theta_re = 0f;
 
 					for(int l = 0; l < ring.Count(); l++){
@@ -410,7 +418,7 @@ public class MAPS : MonoBehaviour {
 					foreach(Triangle T in added_triangles){
 						Vector2[] points = new Vector2[3]{mapped_ring_re[T.ind1], mapped_ring_re[T.ind2], mapped_ring_re[T.ind3]};
 						if(checkContain(points, Vector2.zero)){
-			
+							if(found) Debug.Log("Bad Alrogi pattern3");
 							found = true;
 
 							//calc barycentric coordinates alpha, beta, gamma.
@@ -426,25 +434,29 @@ public class MAPS : MonoBehaviour {
 							mmesh.bijection[kv.Key].Add(T.ind3, normalized_parmas[2]);
 						}
 					}
+
+					if(found){
+						Debug.Log("Found!!");
+					}else{
+						Debug.Log("Not Found!");
+					}
 				}
 			}
 
-			if(!found){
-				Debug.Log("Found!!");
-			}else{
-				Debug.Log("Not Found!");
-			}
+			
 
 			removed = true;
 		}
 		return removed;
 	}
 
+	//http://ja.akionux.net/wiki/index.php/点の三角形内外判別法
 	bool checkContain(Vector2[] tri, Vector2 p){
-		bool sign1 = Vector3.Cross(tri[0] - tri[1], tri[0] - p).z < 0;
-		bool sign2 = Vector3.Cross(tri[1] - tri[2], tri[1] - p).z < 0;
-		bool sign3 = Vector3.Cross(tri[2] - tri[0], tri[2] - p).z < 0;
-		return sign1 && sign2 && sign3;
+		bool sign1 = Vector3.Cross(tri[0] - tri[1], tri[0] - p).z > 0;
+		bool sign2 = Vector3.Cross(tri[1] - tri[2], tri[1] - p).z > 0;
+		bool sign3 = Vector3.Cross(tri[2] - tri[0], tri[2] - p).z > 0;
+		return (sign1 && sign2 && sign3);
+		// || (!sign1 && !sign2 && !sign3);
 	}
 
 	float calcArea(Vector2 a, Vector2 b){
@@ -482,6 +494,25 @@ public class MAPS : MonoBehaviour {
 
 		return rebuilted_mesh;
 	}
+
+	Mesh remeshByBijection(){
+
+		Mesh m = new Mesh();
+		m.vertices = mmesh.P.ToArray();
+
+		//remesh
+		//(1:4) subdivide the base domain and use the inverse map to obtain a regular connectivity remeshing
+		List<int> tris = new List<int>();
+		foreach(Triangle T in mmesh.K.triangles){
+			Vector3 q_on_base_domain = mmesh.P[T.ind1] / 3.0f + mmesh.P[T.ind2] / 3.0f + mmesh.P[T.ind3] / 3.0f;
+			//Solve the point location problem and find original vertex contain PI^(-1)(q)
+			//And find alpha, beta, gamma
+			//add the PI^(-1)(q) = alpha * pi + beta * pj + gamma * pk
+			//Add 4 trianle (q, T.ind1, T.ind2), (q, T.ind2, T.ind3), (q, ind3, ind1)
+		}
+
+		return m;
+	}
 	
 	// Update is called once per frame
 	void Update () {
@@ -489,6 +520,12 @@ public class MAPS : MonoBehaviour {
 			levelDown();
 			Debug.Log("Level Down");
 			Mesh m = rebuiltMesh();
+
+			var mf = GetComponent<MeshFilter>();
+			mf.mesh = m;
+		}
+		if(Input.GetKeyUp(KeyCode.A)){
+			Mesh m = remeshByBijection();
 
 			var mf = GetComponent<MeshFilter>();
 			mf.mesh = m;
