@@ -164,11 +164,11 @@ public class MAPS : MonoBehaviour {
 		//remove the maximum independent
 		bool removed = false;
 
-		for(int i = 0; i < mmesh.P.Count; i++){
-			if(!remove_indices.Contains(i)){
-				mmesh.bijection[i] = mmesh.bijection[i];
-			}
-		}
+		//for(int i = 0; i < mmesh.P.Count; i++){
+		//	if(!remove_indices.Contains(i)){
+		//		mmesh.bijection[i] = mmesh.bijection[i];
+		//		}
+		//}
 
 		for(int i = 0; i < remove_indices.Count(); i++){
 
@@ -221,13 +221,13 @@ public class MAPS : MonoBehaviour {
 			List<float> thetas = new List<float>();
 			Dictionary<int, Vector2> mapped_ring = new Dictionary<int, Vector2>();
 			foreach(int ind in ring) ring_vs.Add(mmesh.P[ind]);
-			for(int l = 0; l < ring.Count(); l++) thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - pi, ring_vs[l + 1 != ring.Count() ? l + 1 : 0]));
+			for(int l = 0; l < ring.Count(); l++) thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - pi, ring_vs[l + 1 != ring.Count() ? l + 1 : 0] - pi));
 			float sum_theta = thetas.Sum();
 			float temp_sum_theta = 0f;
 
 			for(int l = 0; l < ring.Count(); l++){
 				temp_sum_theta += thetas[l];
-				float r = (pi - ring_vs[0]).magnitude;
+				float r = (pi - ring_vs[l]).magnitude;
 				float phai = temp_sum_theta * (on_boundary ? Mathf.PI : Mathf.PI * 2.0f) / sum_theta;
 				mapped_ring.Add(ring[l], new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
 			}
@@ -314,13 +314,13 @@ public class MAPS : MonoBehaviour {
 					//Recalc mapped_ring centerd recalced_p 
 					List<float> thetas_re = new List<float>();
 					Dictionary<int, Vector2> mapped_ring_re = new Dictionary<int, Vector2>();
-					for(int l = 0; l < ring.Count(); l++) thetas_re.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - recalced_p, ring_vs[l + 1 != ring.Count() ? l + 1 : 0]));
+					for(int l = 0; l < ring.Count(); l++) thetas_re.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - recalced_p, ring_vs[l + 1 != ring.Count() ? l + 1 : 0] - recalced_p));
 					float sum_theta_re = thetas_re.Sum();
 					float temp_sum_theta_re = 0f;
 
 					for(int l = 0; l < ring.Count(); l++){
 						temp_sum_theta_re += thetas_re[l];
-						float r = (recalced_p - ring_vs[0]).magnitude;
+						float r = (recalced_p - ring_vs[l]).magnitude;
 						float phai = temp_sum_theta_re * Mathf.PI * 2.0f / sum_theta_re;
 						mapped_ring_re.Add(ring[l], new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
 					}
@@ -336,13 +336,12 @@ public class MAPS : MonoBehaviour {
 							//http://www.osaka-c.ed.jp/shijonawate/pdf/yuumeimondai/vector_4.pdf
 							//because of conformal mapped pi = (0,0)
 							//Area Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
-							Vector3 param = new Vector3(calcArea(points[1], points[2]), calcArea(points[2], points[0]), calcArea(points[0], points[1]));
-							Vector3 normalized_parmas = param.normalized;
+							float[] param = new float[3]{calcArea(points[1], points[2]), calcArea(points[2], points[0]), calcArea(points[0], points[1])};
 				
 							mmesh.bijection[kv.Key].Clear();
-							mmesh.bijection[kv.Key].Add(T.ind1, normalized_parmas[0]);
-							mmesh.bijection[kv.Key].Add(T.ind2, normalized_parmas[1]);
-							mmesh.bijection[kv.Key].Add(T.ind3, normalized_parmas[2]);
+							mmesh.bijection[kv.Key].Add(T.ind1, param[0] / param.Sum());
+							mmesh.bijection[kv.Key].Add(T.ind2, param[1] / param.Sum());
+							mmesh.bijection[kv.Key].Add(T.ind3, param[2] / param.Sum());
 						}
 					}
 
@@ -407,10 +406,7 @@ public class MAPS : MonoBehaviour {
 	Mesh remeshByBijection(){
 
 		Mesh m = new Mesh();
-		//m_vertices = mmesh.P.ToArray();
-
-
-
+		
 		//remesh
 		//(1:4) subdivide the base domain and use the inverse map to obtain a regular connectivity remeshing
 		List<Vector3> mvertices = new List<Vector3>(mesh.vertices);
@@ -505,6 +501,7 @@ public class MAPS : MonoBehaviour {
 				thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(projected_points[l] - q_on_base_domain, projected_points[l + 1 != projected_points.Count() ? l + 1 : 0]));
 			}
 			float sum_theta = thetas.Sum();
+			Debug.Log("sum:" + sum_theta.ToString());
 			float temp_sum_theta = 0f;
 
 			for(int l = 0; l < projected_points.Count(); l++){
@@ -526,6 +523,7 @@ public class MAPS : MonoBehaviour {
 
 			//Add 4 trianle (q, T.ind1, T.ind2), (q, T.ind2, T.ind3), (q, ind3, ind1)
 			int new_ind = mvertices.Count;
+			Debug.Log(q_on_L);
 			mvertices.Add(q_on_L);
 			mtris.Add(new_ind);
 			mtris.Add(T.ind1);
@@ -651,7 +649,6 @@ public class MAPS : MonoBehaviour {
 		Vector3 v0 = dest - orig;
 		Vector3 v1 = X - orig;
 		return false;
-
 	}
 	
 	// Update is called once per frame
@@ -669,6 +666,18 @@ public class MAPS : MonoBehaviour {
 
 			var mf = GetComponent<MeshFilter>();
 			mf.mesh = m;
+		}
+
+		if(Input.GetKeyUp(KeyCode.V)){
+			var bijection = mmesh.bijection;
+			Debug.Log(bijection.Count);
+
+			foreach(KeyValuePair<int, Dictionary<int, float>> kv in bijection){
+				Debug.Log("V:" + kv.Key.ToString());
+				foreach(KeyValuePair<int, float> pa in kv.Value){
+					Debug.Log("I:" + pa.Key.ToString() + " pa:" + pa.Value.ToString());
+				}
+			}
 		}
 	}
 }

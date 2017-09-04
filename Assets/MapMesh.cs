@@ -31,6 +31,7 @@ public struct MapsMesh {
 		foreach(KeyValuePair<int, Dictionary<int, float>> b in bijection){
 			if(b.Value.ContainsKey(ind1) && b.Value.ContainsKey(ind2) && b.Value.ContainsKey(ind3)) result.Add(b.Key);
 		}
+		Debug.Log(result.Count);
 		return result;
 	}
 
