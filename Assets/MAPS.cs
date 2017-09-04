@@ -7,94 +7,6 @@ using System.Linq;
 //Easy implementation
 //I haven't impelemnted smoothing and feature edges yet.
 
-//definitions of structures
-//P is a set of original positions of vertices.
-//K is a toopology. Now I implemented not using edge information.
-//feature points are selected randomly. TODO: It should be seleced to share between two meshes.
-//bijection phai(K^L) -> phai(K^l). If it is null, it mean identity.
-public struct MapsMesh {
-	public List<Vector3> P;
-	public Topologies K;
-	public List<int> featurePoints;
-	public Dictionary<int, Dictionary<int, float>> bijection;
-
-	public MapsMesh (List<Vector3> ps, Topologies topo, List<int> fps){
-		P = ps;
-		K = topo;
-		featurePoints = fps;
-		bijection = new Dictionary<int, Dictionary<int, float>>(); 
-
-		for(int i = 0; i < P.Count; i++){
-			bijection.Add(i, new Dictionary<int, float>());
-		}
-	}
-}
-
-public struct Topologies {
-	public List<Vertex> vertices;
-	public List<Edge> edges;
-	public List<Triangle> triangles;
-
-	public Topologies (List<Vertex> vs, List<Edge> es, List<Triangle> ts){
-		vertices = vs;
-		edges = es;
-		triangles = ts;
-	}
-}
-
-public struct Vertex {
-	public int ind;
-
-	public Vertex (int i){
-		ind = i;
-	}
-}
-
-public struct Edge {
-	public int ind1;
-	public int ind2;
-
-	public Edge (int i1, int i2){
-		ind1 = i1;
-		ind2 = i2;
-	}
-}
-
-public struct Triangle {
-	public int ind1;
-	public int ind2;
-	public int ind3;
-
-	public Triangle (int i1, int i2, int i3){
-		ind1 = i1;
-		ind2 = i2;
-		ind3 = i3;
-	}
-
-	//this return pos
-	public int contains(int ind){
-		if(ind == ind1) return 1;
-		if(ind == ind2) return 2;
-		if(ind == ind3) return 3;
-		return 0;
-	}
-
-	public int[] getT(int pos){
-		if(pos == 1) return new int[3]{ind1, ind2, ind3};
-		if(pos == 2) return new int[3]{ind2, ind3, ind1};
-		if(pos == 3) return new int[3]{ind3, ind1, ind2};
-		return new int[0]{};
-	}
-
-	public bool isEqual(Triangle T){
-		if(ind1 != T.ind1 && ind1 != T.ind2 && ind1 != T.ind3) return false;
-		if(ind2 != T.ind1 && ind2 != T.ind2 && ind2 != T.ind3) return false;
-		if(ind3 != T.ind1 && ind3 != T.ind2 && ind3 != T.ind3) return false;
-		return true;
-	}
-}
-
-
 public class MAPS : MonoBehaviour {
 
 	public Mesh mesh;
@@ -375,11 +287,10 @@ public class MAPS : MonoBehaviour {
 						//http://www.osaka-c.ed.jp/shijonawate/pdf/yuumeimondai/vector_4.pdf
 						//because of conformal mapped pi = (0,0)
 						//Area Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
-						Vector3 param = new Vector3(calcArea(points[1], points[2]), calcArea(points[2], points[0]), calcArea(points[0], points[1]));
-						Vector3 normalized_parmas = param.normalized;
-						mmesh.bijection[remove_indices[i]].Add(T.ind1, normalized_parmas[0]);
-						mmesh.bijection[remove_indices[i]].Add(T.ind2, normalized_parmas[1]);
-						mmesh.bijection[remove_indices[i]].Add(T.ind3, normalized_parmas[2]);
+						float[] param = new float[3]{calcArea(points[1], points[2]), calcArea(points[2], points[0]), calcArea(points[0], points[1])};
+						mmesh.bijection[remove_indices[i]].Add(T.ind1, param[0] / param.Sum());
+						mmesh.bijection[remove_indices[i]].Add(T.ind2, param[1] / param.Sum());
+						mmesh.bijection[remove_indices[i]].Add(T.ind3, param[2] / param.Sum());
 					}
 				}
 			}
@@ -443,8 +354,6 @@ public class MAPS : MonoBehaviour {
 				}
 			}
 
-			
-
 			removed = true;
 		}
 		return removed;
@@ -455,8 +364,7 @@ public class MAPS : MonoBehaviour {
 		bool sign1 = Vector3.Cross(tri[0] - tri[1], tri[0] - p).z > 0;
 		bool sign2 = Vector3.Cross(tri[1] - tri[2], tri[1] - p).z > 0;
 		bool sign3 = Vector3.Cross(tri[2] - tri[0], tri[2] - p).z > 0;
-		return (sign1 && sign2 && sign3);
-		// || (!sign1 && !sign2 && !sign3);
+		return (sign1 && sign2 && sign3) || (!sign1 && !sign2 && !sign3);
 	}
 
 	float calcArea(Vector2 a, Vector2 b){
@@ -495,6 +403,7 @@ public class MAPS : MonoBehaviour {
 		return rebuilted_mesh;
 	}
 
+
 	Mesh remeshByBijection(){
 
 		Mesh m = new Mesh();
@@ -503,15 +412,224 @@ public class MAPS : MonoBehaviour {
 		//remesh
 		//(1:4) subdivide the base domain and use the inverse map to obtain a regular connectivity remeshing
 		List<int> tris = new List<int>();
+
+		//Fitstly, construct quadedge data structure from original meshes
+		//When in this situation I need to condider the mesh is subdevided.
+		//But by selecting one of the three points which construct new points, 
+		//I have not to consider that problem
+		List<QuadEdge> quadedges = new List<QuadEdge>();
+		
+		int[] oriTri = mesh.triangles;
+		int triNum = oriTri.Length/ 3;
+		
+		for (int i = 0; i < triNum; i++){
+			Edge orgdest = new Edge(oriTri[i * 3], oriTri[i * 3 + 1]);
+			Edge onext = new Edge(oriTri[i * 3], oriTri[i * 3 + 2]);
+			Edge dprev = new Edge(oriTri[i * 3 + 2], oriTri[i * 3 + 1]);
+			quadedges.Add(new QuadEdge(orgdest, onext, dprev));
+		}
+
+		Dictionary<string, int[]> orig_tri_dict = new Dictionary<string, int[]>();
+		for (int i = 0; i < triNum; i++){
+			int ind1 = oriTri[i * 3];
+			int ind2 = oriTri[i * 3 + 1];
+			int ind3 = oriTri[i * 3 + 2];
+			List<int> tri = new List<int>(){ind1, ind2, ind3};
+			tri.Sort();
+			string key = tri[0].ToString() + "," + tri[1].ToString() + "," + tri[2].ToString();
+			orig_tri_dict[key] = tri.ToArray();
+		}
+
 		foreach(Triangle T in mmesh.K.triangles){
 			Vector3 q_on_base_domain = mmesh.P[T.ind1] / 3.0f + mmesh.P[T.ind2] / 3.0f + mmesh.P[T.ind3] / 3.0f;
 			//Solve the point location problem and find original vertex contain PI^(-1)(q)
 			//And find alpha, beta, gamma
+			//q = alpha * PI(pi) + beta * PI(pj) + gamma * PI(pk)
 			//add the PI^(-1)(q) = alpha * pi + beta * pj + gamma * pk
 			//Add 4 trianle (q, T.ind1, T.ind2), (q, T.ind2, T.ind3), (q, ind3, ind1)
+
+			//Find a bijection which use T.ind1, T.ind2, T.ind3 and find location
+			List<int> candidate = mmesh.FindBiject(T.ind1, T.ind2, T.ind3);
+			candidate.Sort();
+
+			//Find a original triangle which contain all indices in candidate.
+			List<int[]> cand_orig_tri = new List<int[]>();
+
+			for(int i = 0; i < candidate.Count - 2; i++){
+				int ind1 = candidate[i];
+				for(int j = i + 1; j < candidate.Count - 1; j++){
+					int ind2 = candidate[j];
+					for(int k = j + 1; k < candidate.Count; k++){
+						int ind3 = candidate[k];
+						string key = ind1.ToString() + "," + ind2.ToString() + "," + ind3.ToString();
+						if(orig_tri_dict.ContainsKey(key)) cand_orig_tri.Add(orig_tri_dict[key]);
+					}
+				}
+			}
+
+			//By bijection, the gravitation of all tris determined by T.
+			//So, I only have to calculate the distance between target and candidate gravitation
+			float min_dist = float.MaxValue;
+			int[] min_dist_tri = new int[3]{0,0,0};
+
+			foreach(int[] tri in cand_orig_tri){
+				float[] abgmma= new float[3]{0,0,0};
+
+				//calc gravitation of tri represented by parameters
+				foreach(int ind in tri){
+					Dictionary<int, float> elements_of_linearfunc = mmesh.bijection[tri[ind]];
+					abgmma[0] += elements_of_linearfunc[T.ind1] / 3.0f;
+					abgmma[1] += elements_of_linearfunc[T.ind2] / 3.0f;
+					abgmma[2] += elements_of_linearfunc[T.ind3] / 3.0f;
+				}
+				//calc dist by parameters
+				float dist = Mathf.Pow((abgmma[0] - 1.0f / 3.0f), 2.0f) + Mathf.Pow((abgmma[1] - 1.0f / 3.0f), 2.0f) + Mathf.Pow((abgmma[2] - 1.0f / 3.0f), 2.0f);
+				if(dist < min_dist){
+					min_dist = dist;
+					min_dist_tri = tri;
+				}
+			}
+			
+			//found target ori_tri
+			List<int> target_ori_tri = new List<int>();
+			target_ori_tri.AddRange(min_dist_tri);
+			List<Vector3> projected_points = mmesh.getProjectedPoints(target_ori_tri);
+
+			List<float> thetas = new List<float>();
+			Dictionary<int, Vector2> mapped_ring = new Dictionary<int, Vector2>();
+
+			for(int l = 0; l < projected_points.Count; l++) {
+				thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(projected_points[l] - q_on_base_domain, projected_points[l + 1 != projected_points.Count() ? l + 1 : 0]));
+			}
+			float sum_theta = thetas.Sum();
+			float temp_sum_theta = 0f;
+
+			for(int l = 0; l < projected_points.Count(); l++){
+				temp_sum_theta += thetas[l];
+				float r = (q_on_base_domain - projected_points[0]).magnitude;
+				float phai = temp_sum_theta * Mathf.PI * 2.0f / sum_theta;
+				mapped_ring.Add(target_ori_tri[l], new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
+			}
+
+			float alpha = calcArea(mapped_ring[1], mapped_ring[2]);
+			float beta = calcArea(mapped_ring[0], mapped_ring[2]);
+			float gamma = calcArea(mapped_ring[0], mapped_ring[1]);
+			float sum = alpha + beta + gamma;
+			alpha /= sum;
+			beta /= sum;
+			gamma /= sum;
+
+			Vector3 q_on_L = alpha * mmesh.P[target_ori_tri[0]] + beta * mmesh.P[target_ori_tri[1]] + gamma * mmesh.P[target_ori_tri[2]];
+
+
+			
+
+			/* 
+			//By bijection, project the triangle to base domain.
+			List<List<Vector3>> projected_orig_tris = new List<List<Vector3>>();
+
+			foreach(int[] tri in cand_orig_tri){
+
+				List<Vector3> projected_orig_tri = new List<Vector3>();
+				foreach(int ind in tri){
+					Dictionary<int, float> elements_of_linearfunc = mmesh.bijection[tri[ind]];
+					Vector3 p0 = Vector3.zero;
+
+					foreach(KeyValuePair<int, float> param in elements_of_linearfunc){
+						p0 += mmesh.P[param.Key] * param.Value;
+					}
+					projected_orig_tri.Add(p0);
+				}
+
+				projected_orig_tris.Add(projected_orig_tri);
+			}*/
+
+			//Firstly, check whether q on the plane defined by triangle
+			//This stage is no need?
+			//Check the target in the triangle in the projected space
+
+
+
+
+			//First: find a quadedge contains T.ind1;
+			int e_orig = T.ind1;
+			int startEdgeIndex = findContainedQuadEdge(e_orig, quadedges);
+
+			//Find pi,pj,pk
+			QuadEdge solvedLocation = SolvePointLocation(q_on_base_domain, startEdgeIndex, quadedges);
+
+			//calc alpha,beta,gamma
+
+			//add 4 Triangle centerd on PI^(-1)(q)
 		}
 
 		return m;
+	}
+
+	int findContainedQuadEdge(int ind, List<QuadEdge> quadedges){
+		for(int i = 0; i < quadedges.Count; i++){
+			QuadEdge qe = quadedges[i];
+			if(qe.contain(ind)) return i;
+		}
+		return 0;
+	}
+
+	QuadEdge SolvePointLocation(Vector3 target, int startIndex, List<QuadEdge> quadedges){
+		//Function: BF_Locate
+		//In: X: Point whose loaction is to be found
+		//	  T: Triangulation in which point is to be located 
+		//Out: e: Edge on which X lies, or which has the triangle containing X on its left
+
+		//begin
+		//e = some edge of T
+		//if RightOf(X, e) then e = e.Sym endif
+		//while(true)
+		//	if X = e.Org or e.Dest then return e
+		//	else 
+		//		whichop = 0
+		//		if not RightOf(X,e.Onext) then whichop +=1 endif
+		//		if not RightOf(X,e.Dprev) then whichop +=2 endif
+		//		case whichop of
+		//			when 0: return e
+		//			when 1: e = e.Onext
+		//			when 2: e = e.Dprev
+		//			when 3:
+		//				if dist(e.Onext.X) < dist(e.Dprev, X) then e = e.Onext
+		//				else e = e.Dprev
+
+		QuadEdge e = quadedges[startIndex];
+
+		if (RightOf(target, e.e)) e = e.sym;
+		while(true){
+			int whichop = 0;
+			if(!RightOf(target, e.Onext)) whichop +=1;
+			if(!RightOf(target, e.Dprev)) whichop +=2;
+
+			switch(whichop){
+				case 0:
+					return e;
+
+				case 1:
+					break;
+				case 2:
+					break;
+				case 3:
+					break;
+				default:
+					break;
+			}
+		}
+
+	}
+
+	bool RightOf(Vector3 X, Edge e){
+		Vector3 orig = mesh.vertices[e.ind1];
+		Vector3 dest = mesh.vertices[e.ind2];
+
+		Vector3 v0 = dest - orig;
+		Vector3 v1 = X - orig;
+		return false;
+
 	}
 	
 	// Update is called once per frame
