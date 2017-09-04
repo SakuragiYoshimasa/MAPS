@@ -407,11 +407,14 @@ public class MAPS : MonoBehaviour {
 	Mesh remeshByBijection(){
 
 		Mesh m = new Mesh();
-		m.vertices = mmesh.P.ToArray();
+		//m_vertices = mmesh.P.ToArray();
+
+
 
 		//remesh
 		//(1:4) subdivide the base domain and use the inverse map to obtain a regular connectivity remeshing
-		List<int> tris = new List<int>();
+		List<Vector3> mvertices = new List<Vector3>(mesh.vertices);
+		List<int> mtris = new List<int>();
 
 		//Fitstly, construct quadedge data structure from original meshes
 		//When in this situation I need to condider the mesh is subdevided.
@@ -477,7 +480,7 @@ public class MAPS : MonoBehaviour {
 
 				//calc gravitation of tri represented by parameters
 				foreach(int ind in tri){
-					Dictionary<int, float> elements_of_linearfunc = mmesh.bijection[tri[ind]];
+					Dictionary<int, float> elements_of_linearfunc = mmesh.bijection[ind];
 					abgmma[0] += elements_of_linearfunc[T.ind1] / 3.0f;
 					abgmma[1] += elements_of_linearfunc[T.ind2] / 3.0f;
 					abgmma[2] += elements_of_linearfunc[T.ind3] / 3.0f;
@@ -496,7 +499,7 @@ public class MAPS : MonoBehaviour {
 			List<Vector3> projected_points = mmesh.getProjectedPoints(target_ori_tri);
 
 			List<float> thetas = new List<float>();
-			Dictionary<int, Vector2> mapped_ring = new Dictionary<int, Vector2>();
+			List<Vector2> mapped_ring = new List<Vector2>();
 
 			for(int l = 0; l < projected_points.Count; l++) {
 				thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(projected_points[l] - q_on_base_domain, projected_points[l + 1 != projected_points.Count() ? l + 1 : 0]));
@@ -508,7 +511,7 @@ public class MAPS : MonoBehaviour {
 				temp_sum_theta += thetas[l];
 				float r = (q_on_base_domain - projected_points[0]).magnitude;
 				float phai = temp_sum_theta * Mathf.PI * 2.0f / sum_theta;
-				mapped_ring.Add(target_ori_tri[l], new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
+				mapped_ring.Add(new Vector2(r * Mathf.Cos(phai), r * Mathf.Sin(phai)));
 			}
 
 			float alpha = calcArea(mapped_ring[1], mapped_ring[2]);
@@ -521,7 +524,20 @@ public class MAPS : MonoBehaviour {
 
 			Vector3 q_on_L = alpha * mmesh.P[target_ori_tri[0]] + beta * mmesh.P[target_ori_tri[1]] + gamma * mmesh.P[target_ori_tri[2]];
 
+			//Add 4 trianle (q, T.ind1, T.ind2), (q, T.ind2, T.ind3), (q, ind3, ind1)
+			int new_ind = mvertices.Count;
+			mvertices.Add(q_on_L);
+			mtris.Add(new_ind);
+			mtris.Add(T.ind1);
+			mtris.Add(T.ind2);
 
+			mtris.Add(new_ind);
+			mtris.Add(T.ind2);
+			mtris.Add(T.ind3);
+
+			mtris.Add(new_ind);
+			mtris.Add(T.ind3);
+			mtris.Add(T.ind1);
 			
 
 			/* 
@@ -552,17 +568,23 @@ public class MAPS : MonoBehaviour {
 
 
 			//First: find a quadedge contains T.ind1;
-			int e_orig = T.ind1;
-			int startEdgeIndex = findContainedQuadEdge(e_orig, quadedges);
+			//int e_orig = T.ind1;
+			//int startEdgeIndex = findContainedQuadEdge(e_orig, quadedges);
 
 			//Find pi,pj,pk
-			QuadEdge solvedLocation = SolvePointLocation(q_on_base_domain, startEdgeIndex, quadedges);
+			//QuadEdge solvedLocation = SolvePointLocation(q_on_base_domain, startEdgeIndex, quadedges);
 
 			//calc alpha,beta,gamma
 
 			//add 4 Triangle centerd on PI^(-1)(q)
 		}
 
+		m.vertices = mvertices.ToArray();
+		m.triangles = mtris.ToArray();
+
+		m.RecalculateBounds();
+		m.RecalculateNormals();
+		m.RecalculateTangents();
 		return m;
 	}
 
