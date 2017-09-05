@@ -22,6 +22,8 @@ public struct MapsMesh {
 
 		for(int i = 0; i < P.Count; i++){
 			bijection.Add(i, new Dictionary<int, float>());
+			bijection[i].Add(i, 1.0f);
+
 		}
 	}
 
@@ -31,7 +33,6 @@ public struct MapsMesh {
 		foreach(KeyValuePair<int, Dictionary<int, float>> b in bijection){
 			if(b.Value.ContainsKey(ind1) && b.Value.ContainsKey(ind2) && b.Value.ContainsKey(ind3)) result.Add(b.Key);
 		}
-		Debug.Log(result.Count);
 		return result;
 	}
 
@@ -79,6 +80,12 @@ public struct Edge {
 	public Edge (int i1, int i2){
 		ind1 = i1;
 		ind2 = i2;
+	}
+
+	public bool isEqual(Edge e){
+		if(e.ind1 == ind1 && e.ind2 == ind2) return true;
+		if(e.ind2 == ind1 && e.ind1 == ind2) return true;
+		return false;
 	}
 }
 
