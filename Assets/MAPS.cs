@@ -144,7 +144,7 @@ public class MAPS : MonoBehaviour {
 				added_triangles = Utility.retriangulationFromRing(ring);
 			}else{ continue; }
 			mmesh.K.triangles.AddRange(added_triangles);
-
+			
 			//Finally, remove triangle and remove vertex from mmesh
 			star = stars[remove_indices[i]];
 			foreach(Triangle T in star){
@@ -162,6 +162,8 @@ public class MAPS : MonoBehaviour {
 					break;
 				}
 			}
+
+			Debug.LogFormat("removed{0}", remove_indices[i]);
 
 			//Pattern 2
 			//When the previous bijection of removed vertex is identity,
@@ -213,7 +215,8 @@ public class MAPS : MonoBehaviour {
 						//Debug.LogFormat("points0:{0:f}, {1:f}", points[0].x, points[0].y);
 						//Debug.LogFormat("points1:{0:f}, {1:f}", points[1].x, points[1].y);
 						//Debug.LogFormat("points2:{0:f}, {1:f}", points[2].x, points[2].y);
-						//Debug.LogFormat("alpha{0:f}, beta{1:f}, gamma{2:f}", param[0], param[1], param[2]);
+						Debug.LogFormat("alpha{0}, beta{1}, gamma{2}", alpha, beta, gamma);
+						Debug.LogFormat("{0}, {1}, {2}", T.ind1, T.ind2, T.ind3);
 					}
 				}
 			}
@@ -230,24 +233,6 @@ public class MAPS : MonoBehaviour {
 				if(kv.Value.ContainsKey(remove_indices[i])){
 					//Debug.Log("search Start");
 					found = false;
-					//Vector3 recalced_p = mmesh.P[kv.Key];
-
-					//Recalc mapped_ring centerd recalced_p 
-					/* 
-					List<float> thetas_re = new List<float>();
-					Dictionary<int, Vector2> mapped_ring_re = new Dictionary<int, Vector2>();
-					for(int l = 0; l < ring.Count(); l++) thetas_re.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l] - recalced_p, ring_vs[l + 1 != ring.Count() ? l + 1 : 0] - recalced_p));
-					float sum_theta_re = thetas_re.Sum();
-					float temp_sum_theta_re = 0f;
-
-					for(int l = 0; l < ring.Count(); l++){
-						temp_sum_theta_re += thetas_re[l];
-						float a = Mathf.PI * 2.0f / sum_theta_re;
-						float r = Mathf.Pow((recalced_p - ring_vs[l]).magnitude, a);
-						float phai = temp_sum_theta_re * a;	
-						mapped_ring_re.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
-					}*/
-
 					int recalced_p_index = kv.Key;
 					Vector3 projected_recalced_p = mmesh.getProjectedPoints(new List<int>{recalced_p_index})[0];
 					float r_of_myu = Mathf.Pow((projected_recalced_p - pi).magnitude, a);
@@ -267,6 +252,22 @@ public class MAPS : MonoBehaviour {
 					if(ind_max == ind_min) {
 						Debug.Log("Fucking search");
 						Debug.LogFormat("ind_min:{0}, ind_max{1}", ind_min, ind_max);
+						Debug.Log("Ring");
+						foreach(int r in ring){
+							Debug.Log(r);
+						}
+
+						Debug.Log("Star");
+						foreach(Triangle t in star){
+							Debug.LogFormat("{0}, {1}, {2}", t.ind1, t.ind2, t.ind3);
+						}
+
+						Debug.Log("hoshii in");
+						foreach(KeyValuePair<int, float> che in kv.Value){
+							if(che.Key != remove_indices[i]){
+								Debug.Log(che.Key);
+							}
+						}
 					}
 					
 					//Because when this situation, theta_of_myu_max = 2PI.
@@ -303,7 +304,12 @@ public class MAPS : MonoBehaviour {
 						//Vector2[] points = new Vector2[3]{mapped_ring_re[T.ind1], mapped_ring_re[T.ind2], mapped_ring_re[T.ind3]};
 						Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
 						if(checkContain(points, myu_pi)){
-							if(found) Debug.Log("Bad Alrogi pattern3");
+							if(found) {
+								Debug.Log("Bad Alrogi pattern3");
+								foreach(Triangle t in added_triangles){
+									Debug.LogFormat("{0}, {1}, {2}", t.ind1, t.ind2, t.ind3);
+								}
+							}
 							found = true;
 
 							//calc barycentric coordinates alpha, beta, gamma.
