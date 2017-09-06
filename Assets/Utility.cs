@@ -7,6 +7,47 @@ using System.Linq;
 
 public static class Utility {
 
+	public static int[] calcMostNearestLineOfTriangle(Vector2 target, Vector2[] triangle){
+		int[] result = new int[2]{0,0};
+
+		float min_dist = float.MaxValue;
+
+		for(int i = 0; i < 3; i++){
+			float D = Mathf.Abs(Vector3.Cross(target - triangle[i], triangle[i + 1 != 3 ? i + 1 : 0] - triangle[0]).z);
+			float L = Vector2.Distance(triangle[i], triangle[i + 1 != 3 ? i + 1 : 0]);
+			float dist = D / L;
+
+			if(dist < min_dist){
+				result[0] = i;
+				result[1] = i + 1;
+			}
+		}
+
+		return result;
+	}
+
+	public static void calcMappedRing(MapsMesh mmesh, Vector3 pi, List<int> ring, ref List<float> thetas, ref List<float> temp_thetas, ref Dictionary<int, Vector2> mapped_ring){
+
+		List<Vector3> ring_vs = new List<Vector3>();
+		thetas = new List<float>();
+		temp_thetas = new List<float>();
+		mapped_ring = new Dictionary<int, Vector2>();
+		foreach(int ind in ring) ring_vs.Add(mmesh.P[ind]);
+
+		for(int l = 0; l < ring.Count(); l++) thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l - 1 != -1 ? l -1 : ring.Count - 1] - pi, ring_vs[l] - pi));
+		float sum_theta = thetas.Sum();
+		float temp_sum_theta = 0f;
+		float a = Mathf.PI * 2.0f / sum_theta;
+
+		for(int l = 0; l < ring.Count(); l++){
+			temp_sum_theta += thetas[l];
+			temp_thetas.Add(temp_sum_theta);
+			float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
+			float phai = temp_sum_theta * a;
+			mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
+		}
+	}
+
 	public static void calcPrioritiesAndStars(MapsMesh mmesh, List<int> candidate, out Dictionary<int ,List<Triangle>> stars, out Dictionary<int, float> priorities){
 		priorities = new Dictionary<int, float>();
 		stars = new Dictionary<int ,List<Triangle>>();
@@ -141,13 +182,34 @@ public static class Utility {
 			var star = stars[first];
 
 			for(int i = 0; i < star.Count; i++){
-				if(upscebding_priorities.ContainsKey(star[i].ind2)){
+				int c = upscebding_priorities.Count;
+				//if(upscebding_priorities.ContainsKey(star[i].ind2)){
+					
 					upscebding_priorities.Remove(star[i].ind2);
-				}
-				if(upscebding_priorities.ContainsKey(star[i].ind3)){
+					
+				//}
+				//if(upscebding_priorities.ContainsKey(star[i].ind3)){
+					
 					upscebding_priorities.Remove(star[i].ind3);
-				}
+					
+				//}
+				//if(first == 32 && c == upscebding_priorities.Count){
+				//	 Debug.Log("not extracted 2");
+				//	 Debug.Log(upscebding_priorities.ContainsKey(star[i].ind2) ? "contain" + star[i].ind2.ToString() : "not conrain");
+				//	 Debug.Log(upscebding_priorities.ContainsKey(star[i].ind3) ? "contain" + star[i].ind3.ToString() : "not conrain");
+				//}
 			}
+			/* 
+			if(first == 33){
+				foreach(KeyValuePair<int, float> prio in priorities){
+					Debug.LogFormat("id: {0}, val: {1}", prio.Key, prio.Value);
+				}
+				Debug.Log("begin tris");
+				foreach(Triangle t in star){
+					Debug.LogFormat("{0},{1},{2}", t.ind1, t.ind2, t.ind3);
+				}
+				Debug.Log("end tris");
+			}*/
 		}
 		return remove_indices;
 	}

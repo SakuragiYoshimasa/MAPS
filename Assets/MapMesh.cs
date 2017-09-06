@@ -116,9 +116,13 @@ public struct Triangle {
 	}
 
 	public bool isEqual(Triangle T){
-		if(ind1 != T.ind1 && ind1 != T.ind2 && ind1 != T.ind3) return false;
-		if(ind2 != T.ind1 && ind2 != T.ind2 && ind2 != T.ind3) return false;
-		if(ind3 != T.ind1 && ind3 != T.ind2 && ind3 != T.ind3) return false;
-		return true;
+
+		if(ind1 == T.ind1 && ind2 == T.ind2 && ind3 == T.ind3) return true;
+		if(ind1 == T.ind1 && ind2 == T.ind3 && ind3 == T.ind2) return true;
+		if(ind1 == T.ind2 && ind2 == T.ind1 && ind3 == T.ind3) return true;
+		if(ind1 == T.ind2 && ind2 == T.ind3 && ind3 == T.ind1) return true;
+		if(ind1 == T.ind3 && ind2 == T.ind1 && ind3 == T.ind2) return true;
+		if(ind1 == T.ind3 && ind2 == T.ind2 && ind3 == T.ind1) return true;
+		return false;
 	}
 }
