@@ -163,7 +163,7 @@ public class MAPS : MonoBehaviour {
 				}
 			}
 
-			Debug.LogFormat("removed{0}", remove_indices[i]);
+			//Debug.LogFormat("removed{0}", remove_indices[i]);
 
 			//Pattern 2
 			//When the previous bijection of removed vertex is identity,
@@ -182,41 +182,20 @@ public class MAPS : MonoBehaviour {
 						//because of conformal mapped pi = (0,0)
 						//Area Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
 						double[] param = new double[3]{calcArea(points[1], points[2]), calcArea(points[2], points[0]), calcArea(points[0], points[1])};
-						double threshold = 0.1;
-
-						double alpha = (param[0] / param.Sum());
-						double beta =  (param[1] / param.Sum());
-						double gamma = (param[2] / param.Sum());
-
-						if(alpha < threshold){
-							double sub = threshold - alpha;
-							alpha = threshold;
-							beta -= sub / 2.0f;
-							gamma -= sub / 2.0f;
-						}
-						if(beta < threshold){
-							double sub = threshold - beta;
-							beta = threshold;
-							alpha -= sub / 2.0f;
-							gamma -= sub / 2.0f;
-						}
-
-						if(gamma < threshold){
-							double sub = threshold - gamma;
-							gamma = threshold;
-							alpha -= sub / 2.0f;
-							beta -= sub / 2.0f;
-						}
-
+						double threshold = 0.08;
+						double params_sum = param.Sum();
+						param = param.Select(p => p / params_sum).ToArray();
+						
 						mmesh.bijection[remove_indices[i]].Clear();
-						mmesh.bijection[remove_indices[i]].Add(T.ind1, (float)alpha);
-						mmesh.bijection[remove_indices[i]].Add(T.ind2, (float)beta);
-						mmesh.bijection[remove_indices[i]].Add(T.ind3, (float)gamma);
+						if(param[0] > threshold) mmesh.bijection[remove_indices[i]].Add(T.ind1, (float)param[0]);
+						if(param[1] > threshold) mmesh.bijection[remove_indices[i]].Add(T.ind2, (float)param[1]);
+						if(param[2] > threshold) mmesh.bijection[remove_indices[i]].Add(T.ind3, (float)param[2]);
+
 						//Debug.LogFormat("points0:{0:f}, {1:f}", points[0].x, points[0].y);
 						//Debug.LogFormat("points1:{0:f}, {1:f}", points[1].x, points[1].y);
 						//Debug.LogFormat("points2:{0:f}, {1:f}", points[2].x, points[2].y);
-						Debug.LogFormat("alpha{0}, beta{1}, gamma{2}", alpha, beta, gamma);
-						Debug.LogFormat("{0}, {1}, {2}", T.ind1, T.ind2, T.ind3);
+						//Debug.LogFormat("alpha{0}, beta{1}, gamma{2}", alpha, beta, gamma);
+						//Debug.LogFormat("{0}, {1}, {2}", T.ind1, T.ind2, T.ind3);
 					}
 				}
 			}
@@ -235,69 +214,79 @@ public class MAPS : MonoBehaviour {
 					found = false;
 					int recalced_p_index = kv.Key;
 					Vector3 projected_recalced_p = mmesh.getProjectedPoints(new List<int>{recalced_p_index})[0];
+					Vector2 myu_pi = Vector2.zero;
 					float r_of_myu = Mathf.Pow((projected_recalced_p - pi).magnitude, a);
-					float theta_of_myu_min = 0f;
-					float theta_of_myu_max = 0f;
-					int ind_min = 0, ind_max = 0;
 
-					for(int l = 0; l < ring.Count(); l++){
-						if(kv.Value.ContainsKey(ring[l]) && kv.Value.ContainsKey(ring[l + 1 != ring.Count ? l + 1 : 0])){
-							theta_of_myu_min = temp_thetas[l];
-							theta_of_myu_max = temp_thetas[l + 1 != ring.Count ? l + 1 : 0];
-							ind_min = ring[l];
-							ind_max = ring[l + 1 != ring.Count ? l + 1 : 0];
-						}
-					}
-
-					if(ind_max == ind_min) {
-						Debug.Log("Fucking search");
-						Debug.LogFormat("ind_min:{0}, ind_max{1}", ind_min, ind_max);
-						Debug.Log("Ring");
-						foreach(int r in ring){
-							Debug.Log(r);
-						}
-
-						Debug.Log("Star");
-						foreach(Triangle t in star){
-							Debug.LogFormat("{0}, {1}, {2}", t.ind1, t.ind2, t.ind3);
-						}
-
-						Debug.Log("hoshii in");
-						foreach(KeyValuePair<int, float> che in kv.Value){
-							if(che.Key != remove_indices[i]){
-								Debug.Log(che.Key);
+					if(kv.Value.Count == 2){
+						float theta_of_myu = 0f;
+						for(int l = 0; l < ring.Count(); l++){
+							if(kv.Value.ContainsKey(ring[l])){
+								theta_of_myu = temp_thetas[l];
 							}
 						}
+						myu_pi = new Vector2(100f * r_of_myu * Mathf.Cos((float)theta_of_myu), 100f * r_of_myu * Mathf.Sin((float)theta_of_myu));
 					}
-					
-					//Because when this situation, theta_of_myu_max = 2PI.
-					if(ring[0] == ind_max){
-						theta_of_myu_max = theta_of_myu_min;
-						theta_of_myu_min = 0;
-					}
+					else if(kv.Value.Count == 3){
+						float theta_of_myu_min = 0f;
+						float theta_of_myu_max = 0f;
+						int ind_min = 0, ind_max = 0;
 
-					double deg_min = Vector3.Angle(mmesh.P[ind_min], projected_recalced_p);
-					double deg_max = Vector3.Angle(mmesh.P[ind_max], projected_recalced_p);
-					double theta_of_myu = (theta_of_myu_max - theta_of_myu_min) * deg_min / (deg_min + deg_max) + theta_of_myu_min;
-					Vector2 myu_pi = new Vector2(100f * r_of_myu * Mathf.Cos((float)theta_of_myu), 100f * r_of_myu * Mathf.Sin((float)theta_of_myu));
+						for(int l = 0; l < ring.Count(); l++){
+							if(kv.Value.ContainsKey(ring[l]) && kv.Value.ContainsKey(ring[l + 1 != ring.Count ? l + 1 : 0])){
+								theta_of_myu_min = temp_thetas[l];
+								theta_of_myu_max = temp_thetas[l + 1 != ring.Count ? l + 1 : 0];
+								ind_min = ring[l];
+								ind_max = ring[l + 1 != ring.Count ? l + 1 : 0];
+							}
+						}
 
-					Vector2[] checkLocation = new Vector2[3]{new Vector2(0,0), mapped_ring[ind_max], mapped_ring[ind_min]};
-					
-					if(checkContain(checkLocation, myu_pi)){
-						//Debug.Log("Location OK");
-					}else{
-						Debug.Log("Bad location");
-						Debug.LogFormat("points0:{0:f}, {1:f}", checkLocation[0].x, checkLocation[0].y);
-						Debug.LogFormat("points1:{0:f}, {1:f}", checkLocation[1].x, checkLocation[1].y);
-						Debug.LogFormat("points2:{0:f}, {1:f}", checkLocation[2].x, checkLocation[2].y);
-						Debug.LogFormat("myu_pi:{0:f}, {1:f}", myu_pi.x, myu_pi.y);
-						Debug.Log("inds:" + ind_min.ToString() + "," + ind_max.ToString() + " deg_min:" + deg_min.ToString() + " max:" + deg_max.ToString()+" r_of_myu:" + r_of_myu.ToString()+" Theta_of_nyu:" + theta_of_myu.ToString()+" Myu_pi:" + myu_pi[0].ToString() + ":" + myu_pi[1].ToString());
-						//Debug.LogFormat("alpha{0:f}, beta{1:f}, gamma{2:f}", param[0], param[1], param[2]);
-					}
-					
-					//if(r_of_myu == float.NaN || ind_max == ind_min || myu_pi.x == float.NaN){
+						if(ind_max == ind_min) {
+							Debug.Log("Fucking search");
+							Debug.LogFormat("ind_min:{0}, ind_max{1}", ind_min, ind_max);
+							Debug.Log("Ring");
+							foreach(int r in ring){
+								Debug.Log(r);
+							}
+
+							Debug.Log("Star");
+							foreach(Triangle t in star){
+								Debug.LogFormat("{0}, {1}, {2}", t.ind1, t.ind2, t.ind3);
+							}
+
+							Debug.Log("hoshii in");
+							foreach(KeyValuePair<int, float> che in kv.Value){
+								if(che.Key != remove_indices[i]){
+									Debug.Log(che.Key);
+								}
+							}
+						}
 						
-					//}
+						//Because when this situation, theta_of_myu_max = 2PI.
+						if(ring[0] == ind_max){
+							theta_of_myu_max = theta_of_myu_min;
+							theta_of_myu_min = 0;
+						}
+
+						double deg_min = Vector3.Angle(mmesh.P[ind_min], projected_recalced_p);
+						double deg_max = Vector3.Angle(mmesh.P[ind_max], projected_recalced_p);
+						double theta_of_myu = (theta_of_myu_max - theta_of_myu_min) * deg_min / (deg_min + deg_max) + theta_of_myu_min;
+						myu_pi = new Vector2(100f * r_of_myu * Mathf.Cos((float)theta_of_myu), 100f * r_of_myu * Mathf.Sin((float)theta_of_myu));
+
+						Vector2[] checkLocation = new Vector2[3]{new Vector2(0,0), mapped_ring[ind_max], mapped_ring[ind_min]};
+						
+						if(checkContain(checkLocation, myu_pi)){
+							//Debug.Log("Location OK");
+						}else{
+							Debug.Log("Bad location");
+							Debug.LogFormat("points0:{0:f}, {1:f}", checkLocation[0].x, checkLocation[0].y);
+							Debug.LogFormat("points1:{0:f}, {1:f}", checkLocation[1].x, checkLocation[1].y);
+							Debug.LogFormat("points2:{0:f}, {1:f}", checkLocation[2].x, checkLocation[2].y);
+							Debug.LogFormat("myu_pi:{0:f}, {1:f}", myu_pi.x, myu_pi.y);
+							Debug.Log("inds:" + ind_min.ToString() + "," + ind_max.ToString() + " deg_min:" + deg_min.ToString() + " max:" + deg_max.ToString()+" r_of_myu:" + r_of_myu.ToString()+" Theta_of_nyu:" + theta_of_myu.ToString()+" Myu_pi:" + myu_pi[0].ToString() + ":" + myu_pi[1].ToString());
+							//Debug.LogFormat("alpha{0:f}, beta{1:f}, gamma{2:f}", param[0], param[1], param[2]);
+						}
+					}
+
 					//find triangle which contain myu_pi
 					foreach(Triangle T in added_triangles){
 
@@ -319,39 +308,17 @@ public class MAPS : MonoBehaviour {
 							for(int n = 0; n < 3; n++){
 								points[n] -= myu_pi;
 							}
-							
+								
 							double[] param = new double[3]{calcArea(points[1], points[2]), calcArea(points[2], points[0]), calcArea(points[0], points[1])};
-				
-							double alpha = (param[0] / param.Sum());
-							double beta =  (param[1] / param.Sum());
-							double gamma = (param[2] / param.Sum());
-							double threshold = 0.1;
-
-							if(alpha < threshold){
-								double sub = threshold - alpha;
-								alpha = threshold;
-								beta -= sub / 2.0f;
-								gamma -= sub / 2.0f;
-							}
-							if(beta < threshold){
-								double sub = threshold - beta;
-								beta = threshold;
-								alpha -= sub / 2.0f;
-								gamma -= sub / 2.0f;
-							}
-
-							if(gamma < threshold){
-								double sub = threshold - gamma;
-								gamma = threshold;
-								alpha -= sub / 2.0f;
-								beta -= sub / 2.0f;
-							}
-							
+					
+							double threshold = 0.08;
+							double params_sum = param.Sum();
+							param = param.Select(p => p / params_sum).ToArray();
+						
 							mmesh.bijection[remove_indices[i]].Clear();
-							mmesh.bijection[remove_indices[i]].Add(T.ind1, (float)alpha);
-							mmesh.bijection[remove_indices[i]].Add(T.ind2, (float)beta);
-							mmesh.bijection[remove_indices[i]].Add(T.ind3, (float)gamma);
-							
+							if(param[0] > threshold) mmesh.bijection[remove_indices[i]].Add(T.ind1, (float)param[0]);
+							if(param[1] > threshold) mmesh.bijection[remove_indices[i]].Add(T.ind2, (float)param[1]);
+							if(param[2] > threshold) mmesh.bijection[remove_indices[i]].Add(T.ind3, (float)param[2]);
 						}
 					}
 					if(found){
@@ -361,7 +328,6 @@ public class MAPS : MonoBehaviour {
 					}
 				}
 			}
-
 			removed = true;
 		}
 		return removed;
