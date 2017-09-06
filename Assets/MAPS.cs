@@ -155,7 +155,7 @@ public class MAPS : MonoBehaviour {
 
 			all_removed_indices.Add(remove_indices[i]);
 
-			Debug.LogFormat("removed {0}", remove_indices[i]);
+			//Debug.LogFormat("removed {0}", remove_indices[i]);
 
 			bool found = false;
 			//Pattern 2
@@ -257,6 +257,19 @@ public class MAPS : MonoBehaviour {
 
 						Vector2[] checkLocation = new Vector2[3]{new Vector2(0,0), mapped_ring[ind_max], mapped_ring[ind_min]};
 						
+						int loop = 0;
+						while(!checkContain(checkLocation, myu_pi)){
+							//calc distance and nearest line is where on the myu_pi on
+							int[] nearest_line_ind = Utility.calcMostNearestLineOfTriangle(myu_pi, checkLocation);
+							float delta = 0.01f;
+							//Force translate to make myu_pi on the triangle
+							//add other points component and translate
+							for(int rem = 0; rem < 3; rem++){
+								if(!nearest_line_ind.Contains(rem)) myu_pi += delta * (checkLocation[rem] - myu_pi);
+							}
+							if(loop > 10) break;
+							loop+=1;
+						}
 						if(checkContain(checkLocation, myu_pi)){
 							//Debug.Log("Location OK");
 						}else{
@@ -279,24 +292,28 @@ public class MAPS : MonoBehaviour {
 					foreach(Triangle T in added_triangles){
 
 						Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
+						/* 
 						if(remove_indices[i]==33){
 							 Debug.LogFormat("{0}, {1}, {2}", T.ind1, T.ind2, T.ind3);
 							Debug.LogFormat("points0:{0:f}, {1:f}", points[0].x, points[0].y);
 							Debug.LogFormat("points1:{0:f}, {1:f}", points[1].x, points[1].y);
 							Debug.LogFormat("points2:{0:f}, {1:f}", points[2].x, points[2].y);
 							Debug.LogFormat("myu_pi:{0:f}, {1:f}", myu_pi.x, myu_pi.y);
-						}
+						}*/
 						//If only have one triangle, it may on the boundary and fail here.
 						//So, force to translate to in the triangle.
+						int loop = 0;
 						while(added_triangles.Count == 1 && !checkContain(points, myu_pi)){
 							//calc distance and nearest line is where on the myu_pi on
 							int[] nearest_line_ind = Utility.calcMostNearestLineOfTriangle(myu_pi, points);
-							float delta = 0.001f;
+							float delta = 0.01f;
 							//Force translate to make myu_pi on the triangle
 							//add other points component and translate
 							for(int rem = 0; rem < 3; rem++){
-								if(!nearest_line_ind.Contains(rem)) myu_pi += delta * points[rem];
+								if(!nearest_line_ind.Contains(rem)) myu_pi += delta * (points[rem] - myu_pi);
 							}
+							if(loop > 10) break;
+							loop+=1;
 						}
 						if(!checkContain(points, myu_pi)) continue;
 						if(found) {
@@ -337,12 +354,11 @@ public class MAPS : MonoBehaviour {
 						Debug.LogFormat("Not Found! {0}, {1} removing{2}", kv.Key, kv.Value.Count, remove_indices[i]);
 						Debug.Log("removed tris");
 							
-								foreach(Triangle t in star){
-									Debug.LogFormat("{0},{1},{2}", t.ind1,t.ind2,t.ind3);
-								//if(t.isEqual(new Triangle(kv.Value.ElementAt(0).Key, kv.Value.ElementAt(1).Key, kv.Value.ElementAt(2).Key))){
-								//	Debug.Log("Please don't extract this trianfleffe");
-								//}
-								}
+						foreach(Triangle t in star){
+							Debug.LogFormat("{0},{1},{2}", t.ind1,t.ind2,t.ind3);
+							//if(t.isEqual(new Triangle(kv.Value.ElementAt(0).Key, kv.Value.ElementAt(1).Key, kv.Value.ElementAt(2).Key))){
+							//	//}
+						}
 						Debug.Log("Ring");
 							foreach(int r in ring){
 								Debug.Log(r);
@@ -370,7 +386,7 @@ public class MAPS : MonoBehaviour {
 	
 	// Use this for initialization
 	void Start () {
-		mesh = TestUtility.generateTestMesh();
+		//mesh = TestUtility.generateTestMesh();
 		mmesh = TransformMesh2MapsMesh(mesh, numOfFeaturePoints);
 		
 		Mesh m = rebuiltMesh();
