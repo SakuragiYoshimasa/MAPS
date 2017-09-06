@@ -182,34 +182,9 @@ public static class Utility {
 			var star = stars[first];
 
 			for(int i = 0; i < star.Count; i++){
-				int c = upscebding_priorities.Count;
-				//if(upscebding_priorities.ContainsKey(star[i].ind2)){
-					
-					upscebding_priorities.Remove(star[i].ind2);
-					
-				//}
-				//if(upscebding_priorities.ContainsKey(star[i].ind3)){
-					
-					upscebding_priorities.Remove(star[i].ind3);
-					
-				//}
-				//if(first == 32 && c == upscebding_priorities.Count){
-				//	 Debug.Log("not extracted 2");
-				//	 Debug.Log(upscebding_priorities.ContainsKey(star[i].ind2) ? "contain" + star[i].ind2.ToString() : "not conrain");
-				//	 Debug.Log(upscebding_priorities.ContainsKey(star[i].ind3) ? "contain" + star[i].ind3.ToString() : "not conrain");
-				//}
+				upscebding_priorities.Remove(star[i].ind2);			
+				upscebding_priorities.Remove(star[i].ind3);
 			}
-			/* 
-			if(first == 33){
-				foreach(KeyValuePair<int, float> prio in priorities){
-					Debug.LogFormat("id: {0}, val: {1}", prio.Key, prio.Value);
-				}
-				Debug.Log("begin tris");
-				foreach(Triangle t in star){
-					Debug.LogFormat("{0},{1},{2}", t.ind1, t.ind2, t.ind3);
-				}
-				Debug.Log("end tris");
-			}*/
 		}
 		return remove_indices;
 	}

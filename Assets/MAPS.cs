@@ -149,14 +149,11 @@ public class MAPS : MonoBehaviour {
 			for(int n = 0; n < mmesh.K.vertices.Count; n++){
 				if(mmesh.K.vertices[n].ind == remove_indices[i]){
 					mmesh.K.vertices.RemoveAt(n);
+					all_removed_indices.Add(remove_indices[i]);
 					break;
 				}
 			}
-
-			all_removed_indices.Add(remove_indices[i]);
-
-			//Debug.LogFormat("removed {0}", remove_indices[i]);
-
+			
 			bool found = false;
 			//Pattern 2
 			//When the previous bijection of removed vertex is identity,
@@ -336,34 +333,13 @@ public class MAPS : MonoBehaviour {
 						if(param[0] > threshold) mmesh.bijection[update_bij_ind].Add(T.ind1, (float)(param[0] + param_sub / 2.0));
 						if(param[1] > threshold) mmesh.bijection[update_bij_ind].Add(T.ind2, (float)(param[1] + param_sub / 2.0));
 						if(param[2] > threshold) mmesh.bijection[update_bij_ind].Add(T.ind3, (float)(param[2] + param_sub / 2.0));
-						//Debug.LogFormat("{0},{1},{2}", T.ind1, T.ind2, T.ind3);
-						if(kv.Value.Count == 3){
-							//Debug.LogFormat("alpha{0}, beta{1}, gamma{2}, {3}", param[0], param[1], param[2], kv.Value.Count);
-							//Debug.LogFormat("{3} is constructed by {0},{1},{2}", T.ind1, T.ind2, T.ind3, kv.Value);
-
-							if(all_removed_indices.Contains(T.ind1) || all_removed_indices.Contains(T.ind2) || all_removed_indices.Contains(T.ind3)){
-								Debug.Log("Bad usinhdfsdfdsfsdfdsffsd");
-							}
-						}
-
-						if(kv.Value.Count == 1){
-							Debug.Log("1 poirbrdfkdsfksdfsdk;lf");
-						}
 					}
 					if(!found){
 						Debug.LogFormat("Not Found! {0}, {1} removing{2}", kv.Key, kv.Value.Count, remove_indices[i]);
 						Debug.Log("removed tris");
-							
-						foreach(Triangle t in star){
-							Debug.LogFormat("{0},{1},{2}", t.ind1,t.ind2,t.ind3);
-							//if(t.isEqual(new Triangle(kv.Value.ElementAt(0).Key, kv.Value.ElementAt(1).Key, kv.Value.ElementAt(2).Key))){
-							//	//}
-						}
+						foreach(Triangle t in star)Debug.LogFormat("{0},{1},{2}", t.ind1,t.ind2,t.ind3);
 						Debug.Log("Ring");
-							foreach(int r in ring){
-								Debug.Log(r);
-						}
-
+						foreach(int r in ring) Debug.Log(r);
 					}
 				}
 			}
