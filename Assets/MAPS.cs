@@ -106,16 +106,16 @@ public class MAPS : MonoBehaviour {
 		List<int> remove_indices = Utility.makeRemovedIndices(priorities, stars);
 		
 		//flatten and retriangulation
-		//remove the maximum independent
 		for(int i = 0; i < remove_indices.Count(); i++){
 
 			var star = stars[remove_indices[i]];
 			bool on_boundary = false;
-			if(star.Count < 3) continue;
+			//if(star.Count < 3) continue;
+			if(star.Count < 2) continue;
 		
 			//find a ring
 			List<int> ring = Utility.FindRingFromStar(star, out on_boundary);
-			if(on_boundary || ring.Last() != star[0].ind3 || ring.GroupBy(x => x).SelectMany(g => g.Skip(1)).Any()) continue;
+			//if(on_boundary || ring.Last() != star[0].ind3 || ring.GroupBy(x => x).SelectMany(g => g.Skip(1)).Any()) continue;
 			
 			//Add new triangles
 			//Fistly, using conformal map z^a, 1 ring will be flattened
@@ -124,35 +124,20 @@ public class MAPS : MonoBehaviour {
 			List<float> thetas = new List<float>();
 			List<float> temp_thetas = new List<float>();
 			Dictionary<int, Vector2> mapped_ring = new Dictionary<int, Vector2>();
-			Utility.calcMappedRing(mmesh, pi, ring, ref thetas, ref temp_thetas, ref mapped_ring);
-			float a = Mathf.PI * 2.0f / thetas.Sum();
+			float a = Utility.calcMappedRing(mmesh, pi, ring, on_boundary, ref thetas, ref temp_thetas, ref mapped_ring);
 
 			//Secondly, retriangulation by a constrained Delauney triangulation
 			//In Test, implementation is easy one.
 			List<Triangle> added_triangles = new List<Triangle>();
-			if(ring.Count >= 3){
-				added_triangles = Utility.retriangulationFromRing(ring);
-			}else{ continue; }
+			//if(ring.Count >= 3){
+			added_triangles = Utility.retriangulationFromRing(ring);
+			//}else{ continue; }
 			mmesh.K.triangles.AddRange(added_triangles);
 			
 			//Finally, remove triangle and remove vertex from mmesh
-			star = stars[remove_indices[i]];
-			foreach(Triangle T in star){
-				for(int j = 0; j < mmesh.K.triangles.Count(); j++){
-					if(mmesh.K.triangles[j].isEqual(T)){
-						mmesh.K.triangles.RemoveAt(j);
-						break;
-					}
-				}
-			}
-
-			for(int n = 0; n < mmesh.K.vertices.Count; n++){
-				if(mmesh.K.vertices[n].ind == remove_indices[i]){
-					mmesh.K.vertices.RemoveAt(n);
-					all_removed_indices.Add(remove_indices[i]);
-					break;
-				}
-			}
+			all_removed_indices.Add(remove_indices[i]);
+			mmesh.removeStars(stars[remove_indices[i]]);
+			mmesh.removeVertex(remove_indices[i]);
 			
 			bool found = false;
 			//Pattern 2

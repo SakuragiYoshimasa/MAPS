@@ -26,7 +26,8 @@ public static class Utility {
 		return result;
 	}
 
-	public static void calcMappedRing(MapsMesh mmesh, Vector3 pi, List<int> ring, ref List<float> thetas, ref List<float> temp_thetas, ref Dictionary<int, Vector2> mapped_ring){
+	//Return a
+	public static float calcMappedRing(MapsMesh mmesh, Vector3 pi, List<int> ring, bool on_boundary,ref List<float> thetas, ref List<float> temp_thetas, ref Dictionary<int, Vector2> mapped_ring){
 
 		List<Vector3> ring_vs = new List<Vector3>();
 		thetas = new List<float>();
@@ -37,15 +38,27 @@ public static class Utility {
 		for(int l = 0; l < ring.Count(); l++) thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l - 1 != -1 ? l -1 : ring.Count - 1] - pi, ring_vs[l] - pi));
 		float sum_theta = thetas.Sum();
 		float temp_sum_theta = 0f;
-		float a = Mathf.PI * 2.0f / sum_theta;
+		float a = Mathf.PI * (!on_boundary ? 2.0f : 1.0f) / sum_theta;
 
-		for(int l = 0; l < ring.Count(); l++){
-			temp_sum_theta += thetas[l];
-			temp_thetas.Add(temp_sum_theta);
-			float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
-			float phai = temp_sum_theta * a;
-			mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
+		if(!on_boundary){
+			for(int l = 0; l < ring.Count(); l++){
+				temp_sum_theta += thetas[l];
+				temp_thetas.Add(temp_sum_theta);
+				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
+				float phai = temp_sum_theta * a;
+				mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
+			}
+		}else{
+			for(int l = 0; l < ring.Count(); l++){
+				temp_thetas.Add(temp_sum_theta);
+				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
+				float phai = temp_sum_theta * a;
+				mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
+				temp_sum_theta += thetas[l];
+			}
 		}
+
+		return a;
 	}
 
 	public static void calcPrioritiesAndStars(MapsMesh mmesh, List<int> candidate, out Dictionary<int ,List<Triangle>> stars, out Dictionary<int, float> priorities){

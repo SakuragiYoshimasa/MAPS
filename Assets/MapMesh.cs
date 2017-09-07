@@ -23,7 +23,6 @@ public struct MapsMesh {
 		for(int i = 0; i < P.Count; i++){
 			bijection.Add(i, new Dictionary<int, float>());
 			bijection[i].Add(i, 1.0f);
-
 		}
 	}
 
@@ -50,6 +49,27 @@ public struct MapsMesh {
 		}
 
 		return projected_points;
+	}
+
+	public void removeVertex(int ind){
+		for(int n = 0; n < K.vertices.Count; n++){
+			if(K.vertices[n].ind == ind){
+				K.vertices.RemoveAt(n);
+				break;
+			}
+		}
+	}
+
+	public void removeStars(List<Triangle> star){
+
+		foreach(Triangle T in star){
+			for(int j = 0; j < K.triangles.Count; j++){
+				if(K.triangles[j].isEqual(T)){
+					K.triangles.RemoveAt(j);
+					break;
+				}
+			}
+		}
 	}
 }
 
