@@ -13,7 +13,8 @@ public class MAPS : MonoBehaviour {
 	public int numOfFeaturePoints; 
 	public Material material;
 	private MapsMesh mmesh;
-	private List<int> all_removed_indices;
+	private List<int> all_removed_indices = new List<int>();
+	private List<int> unremoval_indices = new List<int>();
 
 	MapsMesh TransformMesh2MapsMesh(Mesh mesh, int U){
 
@@ -83,8 +84,9 @@ public class MAPS : MonoBehaviour {
 		List<int> candidate = new List<int>();
 
 		for(int i = 0; i < mmesh.K.vertices.Count; i++){
-			if(!mmesh.featurePoints.Contains(mmesh.K.vertices[i].ind) && !all_removed_indices.Contains(mmesh.K.vertices[i].ind)){
-				candidate.Add(mmesh.K.vertices[i].ind);
+			int ind = mmesh.K.vertices[i].ind;
+			if(!mmesh.featurePoints.Contains(ind) && !all_removed_indices.Contains(ind) && !unremoval_indices.Contains(ind)){
+				candidate.Add(ind);
 			}
 		}
 		return candidate;
@@ -110,13 +112,20 @@ public class MAPS : MonoBehaviour {
 
 			var star = stars[remove_indices[i]];
 			bool on_boundary = false;
-			//if(star.Count < 3) continue;
-			if(star.Count < 2) continue;
+
+			if(star.Count < 3 || star.Count > 12) {
+				unremoval_indices.Add(remove_indices[i]);
+				continue;
+			}
 		
 			//find a ring
 			List<int> ring = Utility.FindRingFromStar(star, out on_boundary);
-			//if(on_boundary || ring.Last() != star[0].ind3 || ring.GroupBy(x => x).SelectMany(g => g.Skip(1)).Any()) continue;
-			
+			if(on_boundary || ring.Last() != star[0].ind3 || ring.GroupBy(x => x).SelectMany(g => g.Skip(1)).Any()){// continue;
+			//if(ring.Count < 3){
+				unremoval_indices.Add(remove_indices[i]);
+				continue;
+			}
+
 			//Add new triangles
 			//Fistly, using conformal map z^a, 1 ring will be flattened
 			Vector3 pi = mmesh.P[remove_indices[i]];
