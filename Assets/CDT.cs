@@ -61,7 +61,7 @@ public static class CDT {
 			//cross discrimination
 			//revert or not
 			if(isCrossingConstrainedEdge(target, ring.Count, ref mapped_ring, ref added_triangles)){
-				revert(ref added_triangles, ref removed_tris, add_count);				
+				revert(ref added_triangles, removed_tris, add_count);				
 			}
 		}
 
@@ -132,18 +132,27 @@ public static class CDT {
 	}
 
 	public static bool isCrossingConstrainedEdge(int target, int ring_count, ref List<Vector2> mapped_ring, ref List<Triangle> added_triangles){
-		
 
+		
 		return false;
 	}
 
-	public static void revert(ref List<Triangle> added_triangles, ref List<Triangle> removed_tris, int add_count){
+	public static void revert(ref List<Triangle> added_triangles, List<Triangle> removed_tris, int add_count){
 
-
+		added_triangles.RemoveRange(added_triangles.Count - 1 - add_count, added_triangles.Count - 1);
+		added_triangles.AddRange(removed_tris);
 	}
 
 	public static void removeSuperTriangle(int ring_count, ref List<Triangle> added_triangles){
+		for(int i = ring_count; i < ring_count + 3; i++){
 
+			for(int j = 0; j < added_triangles.Count; j++){
+				if(added_triangles[j].contains(i) != 0){
+					added_triangles.RemoveAt(j);
+					j--;
+				}
+			}
+		}
 	}
 
 	//referenced http://tercel-sakuragaoka.blogspot.jp/2011/06/processingdelaunay_3958.html
