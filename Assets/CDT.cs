@@ -14,6 +14,17 @@ public static class CDT {
 		//　２辺が同一制約線分と交差している三角形が抽出された場合にはノードDの処理前の状態にメッシュを戻し、ノードD以外のノードを選択する
 		//　すべてのノードについて処理が終了した時点で領域の外に生成された三角形を除去し、メッシュを完成する
 
+		//Make super triangle
+
+		//foreach all ring point, 
+		//	find a triangle which contain the point
+		//	devide into 3 triangles
+		//	transform1 and 2
+		//	cross discrimination
+		//	revert or not
+		
+		//extract super triangle and neighboring edges 
+
 		List<Triangle> added_triangles = new List<Triangle>();
 		int fow = 1;
 		int back = 1;
@@ -36,5 +47,19 @@ public static class CDT {
 			}
 		}
 		return added_triangles;
+	}
+
+	//三角形ABDとAEBについて,
+	//ABDの外接円の内部にEがある場合、あるいはAEBの外接園の内部にDがある場合には辺ABを消去して辺DEを生成することにより
+	//ABDとAEBをAEDとBDEに変換する、さもなければ変換されない
+	public static bool transform_1(){
+		return false;
+	}
+
+	//三角形ABDとAEBについて,
+	//辺DEが制約線分である場合にはABDとAEBをAEDとBDEに変換する。逆にABが制約線分である場合には変換してはいけない
+	//どちらともない場合というのは２つに制約線分が含まれていないようなとき
+	public static bool transform_2(){
+		return false;
 	}
 }
