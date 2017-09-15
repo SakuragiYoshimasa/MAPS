@@ -4,7 +4,7 @@ using UnityEngine;
 
 public static class MapsUtility {
 
-   public static MapsMesh TransformMesh2MapsMesh(Mesh mesh, int U){
+   public static MapsMesh TransformMesh2MapsMesh(ref Mesh mesh, int U){
 
 		int[] tris = mesh.triangles;
 		List<Vertex> vs = new List<Vertex>();
@@ -25,7 +25,7 @@ public static class MapsUtility {
 		}
 
 		Topologies topo = new Topologies(vs, edges, mmaptris);
-		List<int> fp = makeFeaturePoints(mesh, U);
+		List<int> fp = makeFeaturePoints(ref mesh, U);
 
 		List<Vector3> vertices = new List<Vector3>(mesh.vertices);
 		for(int i = 0; i < vertices.Count; i++){
@@ -35,7 +35,7 @@ public static class MapsUtility {
 		return new MapsMesh(new List<Vector3>(mesh.vertices), topo, fp);
 	}
 
-    public static List<int> makeFeaturePoints(Mesh mesh, int U){
+    public static List<int> makeFeaturePoints(ref Mesh mesh, int U){
 
 		List<int> fp = new List<int>();
 		Vector3[] vs = mesh.vertices;

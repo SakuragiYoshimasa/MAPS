@@ -128,6 +128,11 @@ public struct Triangle {
 		return 0;
 	}
 
+	public bool contains(int _ind1, int _ind2){
+		List<int> indices = new List<int>(){ind1, ind2, ind3};
+		return indices.Contains(_ind1) && indices.Contains(_ind2);
+	}
+
 	public int[] getT(int pos){
 		if(pos == 1) return new int[3]{ind1, ind2, ind3};
 		if(pos == 2) return new int[3]{ind2, ind3, ind1};
@@ -144,5 +149,12 @@ public struct Triangle {
 		if(ind1 == T.ind3 && ind2 == T.ind1 && ind3 == T.ind2) return true;
 		if(ind1 == T.ind3 && ind2 == T.ind2 && ind3 == T.ind1) return true;
 		return false;
+	}
+
+	public int getOpposite(Triangle T){
+		if(T.contains(ind1, ind2)) return ind3;
+		if(T.contains(ind1, ind3)) return ind2;
+		if(T.contains(ind3, ind2)) return ind1;
+		return 1000000000;
 	}
 }

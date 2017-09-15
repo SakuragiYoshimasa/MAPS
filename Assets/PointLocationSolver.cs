@@ -4,7 +4,7 @@ using UnityEngine;
 
 public static class PointLocationSolver {
 
-	public static QuadEdge? SolvePointLocation(MapsMesh mmesh, Vector3 target, int startIndex, List<QuadEdge> quadedges, Vector3 n){
+	public static QuadEdge? SolvePointLocation(ref MapsMesh mmesh, Vector3 target, int startIndex, List<QuadEdge> quadedges, Vector3 n){
 		//Function: BF_Locate
 		//In: X: Point whose loaction is to be found
 		//	  T: Triangulation in which point is to be located 
@@ -29,11 +29,11 @@ public static class PointLocationSolver {
 
 		QuadEdge e = quadedges[startIndex];
 
-		if (RightOf(mmesh, target, e.e, n)) e = e.sym;
+		if (RightOf(ref mmesh, target, e.e, n)) e = e.sym;
 		while(true){
 			int whichop = 0;
-			if(!RightOf(mmesh, target, e.Onext, n)) whichop +=1;
-			if(!RightOf(mmesh, target, e.Dprev, n)) whichop +=2;
+			if(!RightOf(ref mmesh, target, e.Onext, n)) whichop +=1;
+			if(!RightOf(ref mmesh, target, e.Dprev, n)) whichop +=2;
 			int? ind = null;
 			switch(whichop){
 				case 0:
@@ -48,7 +48,7 @@ public static class PointLocationSolver {
 					break;
 				case 3:
 					Debug.Log("case3");
-					ind = selectByDist(mmesh, quadedges, e, target);
+					ind = selectByDist(ref mmesh, quadedges, e, target);
 					break;
 				default:
 					break;
@@ -58,7 +58,7 @@ public static class PointLocationSolver {
 		}
 	}
 
-	static int? selectByDist(MapsMesh mmesh, List<QuadEdge> quadedges, QuadEdge e, Vector3 target){
+	static int? selectByDist(ref MapsMesh mmesh, List<QuadEdge> quadedges, QuadEdge e, Vector3 target){
 		Vector3 eo = mmesh.P[e.Onext.ind1] - mmesh.P[e.Onext.ind2];
 		Vector3 xe = target - mmesh.P[e.Onext.ind2];
 		float inner_product = Vector3.Dot(eo, xe);
@@ -84,7 +84,7 @@ public static class PointLocationSolver {
 		return null;
 	}
 
-	static bool RightOf(MapsMesh mmesh, Vector3 X, Edge e, Vector3 n){
+	static bool RightOf(ref MapsMesh mmesh, Vector3 X, Edge e, Vector3 n){
 		Vector3 orig = mmesh.getProjectedPoints(new List<int>{e.ind1})[0];
 		Vector3 dest = mmesh.getProjectedPoints(new List<int>{e.ind2})[0];
 		Vector3 v0 = dest - orig;

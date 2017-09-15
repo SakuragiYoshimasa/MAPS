@@ -5,7 +5,7 @@ using System.Linq;
 
 public static class RemeshUtility {
 
-  	public static Mesh rebuiltMesh(MapsMesh mmesh){
+  	public static Mesh rebuiltMesh(ref MapsMesh mmesh){
 
 		Mesh rebuilted_mesh = new Mesh();
 
@@ -27,7 +27,7 @@ public static class RemeshUtility {
 		return rebuilted_mesh;
 	}
 
-	public static Mesh generateBaseMeshByBijection(MapsMesh mmesh, Mesh mesh){
+	public static Mesh generateBaseMeshByBijection(ref MapsMesh mmesh, ref Mesh mesh){
 		int verts = mesh.vertices.Count();
 		List<int> indices = new List<int>();
 		for(int i = 0; i < verts; i++) indices.Add(i);	
@@ -39,7 +39,7 @@ public static class RemeshUtility {
 		return m;
 	}
 
-	static Dictionary<string, int[]> makeOriTriDict(Mesh mesh){
+	static Dictionary<string, int[]> makeOriTriDict(ref Mesh mesh){
 		int[] oriTri = mesh.triangles;
 		int triNum = oriTri.Length/ 3;
 
@@ -57,7 +57,7 @@ public static class RemeshUtility {
 		return orig_tri_dict;
 	}
 
-	public static Mesh remeshByBijection(MapsMesh mmesh, Mesh mesh){
+	public static Mesh remeshByBijection(ref MapsMesh mmesh, ref Mesh mesh){
 
 		Mesh m = new Mesh();
 		
@@ -70,8 +70,8 @@ public static class RemeshUtility {
 		//When in this situation I need to condider the mesh is subdevided.
 		//But by selecting one of the three points which construct new points, 
 		//I have not to consider that problem
-		List<QuadEdge> quadedges = MathUtility.makeQuadedgeStructure(mesh);
-		Dictionary<string, int[]> orig_tri_dict = makeOriTriDict(mesh);
+		List<QuadEdge> quadedges = MathUtility.makeQuadedgeStructure(ref mesh);
+		Dictionary<string, int[]> orig_tri_dict = makeOriTriDict(ref mesh);
 		Debug.Log(mmesh.K.triangles.Count);
 		foreach(Triangle T in mmesh.K.triangles){
 			Vector3 q_on_base_domain = mmesh.P[T.ind1] / 3.0f + mmesh.P[T.ind2] / 3.0f + mmesh.P[T.ind3] / 3.0f;
@@ -113,8 +113,8 @@ public static class RemeshUtility {
 				int[] e_origs = new int[3]{T.ind1,T.ind2,T.ind3};
 				foreach(int e_orig in e_origs){
 					int startEdgeIndex = MathUtility.findContainedQuadEdge(e_orig, quadedges);
-					solvedLocation = PointLocationSolver.SolvePointLocation(mmesh, q_on_base_domain, startEdgeIndex, quadedges, n);
-					if(solvedLocation == null) solvedLocation = PointLocationSolver.SolvePointLocation(mmesh, q_on_base_domain, startEdgeIndex, quadedges, -n);
+					solvedLocation = PointLocationSolver.SolvePointLocation(ref mmesh, q_on_base_domain, startEdgeIndex, quadedges, n);
+					if(solvedLocation == null) solvedLocation = PointLocationSolver.SolvePointLocation(ref mmesh, q_on_base_domain, startEdgeIndex, quadedges, -n);
 					if(solvedLocation != null){ 
 						break;
 					}

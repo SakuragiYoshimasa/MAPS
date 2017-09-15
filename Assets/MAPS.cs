@@ -74,9 +74,9 @@ public class MAPS : MonoBehaviour {
 			//Secondly, retriangulation by a constrained Delauney triangulation
 			//In Test, implementation is easy one.
 			List<Triangle> added_triangles = new List<Triangle>();
-			//if(ring.Count >= 3){
-			added_triangles = Utility.retriangulationFromRing(ring);
-			//}else{ continue; }
+			if(ring.Count >= 3){
+				added_triangles = Utility.retriangulationFromRing(ring);
+			}else{ continue; }
 			mmesh.K.triangles.AddRange(added_triangles);
 			
 			//Finally, remove triangle and remove vertex from mmesh
@@ -197,9 +197,8 @@ public class MAPS : MonoBehaviour {
 							if(loop > 10) break;
 							loop+=1;
 						}
-						if(MathUtility.checkContain(checkLocation, myu_pi)){
-							//Debug.Log("Location OK");
-						}else{
+						
+						if(!MathUtility.checkContain(checkLocation, myu_pi)){
 							Debug.LogFormat("Bad location{0}", kv.Value.Count);
 							foreach(KeyValuePair<int, float> pair in kv.Value){
 								Debug.LogFormat("ind:{0}, value:{1}", pair.Key,pair.Value);
@@ -219,14 +218,7 @@ public class MAPS : MonoBehaviour {
 					foreach(Triangle T in added_triangles){
 
 						Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
-						/* 
-						if(remove_indices[i]==33){
-							 Debug.LogFormat("{0}, {1}, {2}", T.ind1, T.ind2, T.ind3);
-							Debug.LogFormat("points0:{0:f}, {1:f}", points[0].x, points[0].y);
-							Debug.LogFormat("points1:{0:f}, {1:f}", points[1].x, points[1].y);
-							Debug.LogFormat("points2:{0:f}, {1:f}", points[2].x, points[2].y);
-							Debug.LogFormat("myu_pi:{0:f}, {1:f}", myu_pi.x, myu_pi.y);
-						}*/
+
 						//If only have one triangle, it may on the boundary and fail here.
 						//So, force to translate to in the triangle.
 						int loop = 0;
@@ -280,10 +272,10 @@ public class MAPS : MonoBehaviour {
 	
 	// Use this for initialization
 	void Start () {
-		//mesh = TestUtility.generateTestMesh();
-		mmesh = MapsUtility.TransformMesh2MapsMesh(mesh, numOfFeaturePoints);
+		mesh = TestUtility.generateTestMesh();
+		mmesh = MapsUtility.TransformMesh2MapsMesh(ref mesh, numOfFeaturePoints);
 		
-		Mesh m = RemeshUtility.rebuiltMesh(mmesh);
+		Mesh m = RemeshUtility.rebuiltMesh(ref mmesh);
 		var mf = GetComponent<MeshFilter>();
 		mf.mesh = m;
 
@@ -297,7 +289,7 @@ public class MAPS : MonoBehaviour {
 		if(Input.GetKeyUp(KeyCode.Space)){
 			levelDown();
 			Debug.Log("Level Down");
-			Mesh m = RemeshUtility.rebuiltMesh(mmesh);
+			Mesh m = RemeshUtility.rebuiltMesh(ref mmesh);
 			var mf = GetComponent<MeshFilter>();
 			mf.mesh = m;
 		}
@@ -309,7 +301,7 @@ public class MAPS : MonoBehaviour {
 		}
 
 		if(Input.GetKeyUp(KeyCode.B)){
-			Mesh m = RemeshUtility.generateBaseMeshByBijection(mmesh, mesh);
+			Mesh m = RemeshUtility.generateBaseMeshByBijection(ref mmesh, ref mesh);
 			var mf = GetComponent<MeshFilter>();
 			mf.mesh = m;
 		}

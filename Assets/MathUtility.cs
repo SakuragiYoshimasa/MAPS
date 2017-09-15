@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public static class MathUtility {
-	public static List<QuadEdge> makeQuadedgeStructure(Mesh mesh){
+	public static List<QuadEdge> makeQuadedgeStructure(ref Mesh mesh){
 		List<QuadEdge> quadedges = new List<QuadEdge>();
 		
 		int[] oriTri = mesh.triangles;

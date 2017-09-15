@@ -1,11 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public static class CDT {
 	
 	public static List<Triangle> retriangulationFromRingByCDT(List<int> ring, List<Vector2> mapped_ring){
-
+		//CDTの適用は擬似indicesで行い、最後に元に戻して返す
+		List<Triangle> added_triangles = new List<Triangle>();
+		List<int> used_nodes = new List<int>();
 		//領域を覆う大きな三角形を生成する
 		//制約線分に接するノードを一個ずつ選択し、以下の処理を行う
 		//　ノードDを内部に含む三角形ABCをABD,BCD,CADに分割する
@@ -15,38 +18,156 @@ public static class CDT {
 		//　すべてのノードについて処理が終了した時点で領域の外に生成された三角形を除去し、メッシュを完成する
 
 		//Make super triangle
+		float super_rad = mapped_ring.Select(pos => pos.magnitude).Max() * 10.0f;
+		for(int i = 0; i < 3; i++){
+			used_nodes.Add(ring.Count + i);	
+			mapped_ring.Add(new Vector2(super_rad * Mathf.Cos(Mathf.PI * 2.0f / 3.0f * (float)i), super_rad * Mathf.Sin(Mathf.PI * 2.0f / 3.0f * (float)i)));
+		}
+		added_triangles.Add(new Triangle(ring.Count, ring.Count + 1, ring.Count + 2));
+		
+		Queue<int> node_queue = new Queue<int>();
+		for(int i = 0; i < ring.Count; i++) node_queue.Enqueue(i);
 
 		//foreach all ring point, 
-		//	find a triangle which contain the point
-		//	devide into 3 triangles
-		//	transform1 and 2
-		//	cross discrimination
-		//	revert or not
-		
-		//extract super triangle and neighboring edges 
+		while(node_queue.Count > 0){
+			int target = node_queue.Dequeue();
+			//	find a triangle which contain the point
+			int? triangle_ind = null;
 
-		List<Triangle> added_triangles = new List<Triangle>();
-		int fow = 1;
-		int back = 1;
-		int p1 = ring[0];
-		int p2 = ring[fow];
-		int p3 = ring[ring.Count - back];
-		while(fow < ring.Count - back){
-			added_triangles.Add(new Triangle(p1, p3, p2));
-			
-			if(fow == back){
-				fow++;
-				p1 = p2;
-				p2 = ring[fow];
-				p3 = ring[ring.Count - back];
-			}else{
-				back++;
-				p1 = p3;
-				p2 = ring[fow];
-				p3 = ring[ring.Count - back];
+			for(int i = 0; i < added_triangles.Count; i++){
+				Triangle T = added_triangles[i];
+				Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
+				if(MathUtility.checkContain(points, mapped_ring[target])){
+					triangle_ind = i;
+					break;
+				}
+			}
+			//復元用
+			int add_count = 3;
+			List<Triangle> removed_tris = new List<Triangle>();
+
+			//	devide into 3 triangles
+			Triangle devided_tri = added_triangles[triangle_ind.Value];
+			List<Triangle> new_tris = new List<Triangle>(){new Triangle(target, devided_tri.ind1, devided_tri.ind2), new Triangle(target, devided_tri.ind2, devided_tri.ind3), new Triangle(target, devided_tri.ind3, devided_tri.ind1)}; 
+			added_triangles.RemoveAt(triangle_ind.Value);
+			added_triangles.Add(new_tris[0]);
+			added_triangles.Add(new_tris[1]);
+			added_triangles.Add(new_tris[2]);
+			removed_tris.Add(devided_tri);
+
+			//Transformation
+			transform(new_tris, ref mapped_ring, ref added_triangles, ref add_count, ref removed_tris);
+
+			//cross discrimination
+			//revert or not
+			if(isCrossingConstrainedEdge(target, ring.Count, ref mapped_ring, ref added_triangles)){
+				revert(ref added_triangles, ref removed_tris, add_count);				
 			}
 		}
+
+		//extract super triangle and neighboring edges 
+		removeSuperTriangle(ring.Count, ref added_triangles);
+
+		//transform to real indices 
 		return added_triangles;
+	}
+
+	
+
+	public static void transform(List<Triangle> new_tris, ref List<Vector2> mapped_ring, ref List<Triangle> added_triangles, ref int add_count, ref List<Triangle> removed_tris){
+		//List<Triangle> result = new List<Triangle>();
+
+		for(int i = 0; i < new_tris.Count; i++){
+				
+			Triangle T1 = new_tris[i];
+			Triangle? neighb_tri = null;
+			int? neighb_tri_ind = null;
+
+			//Find neighbor triangles
+			for(int j = 0; j < added_triangles.Count; j++){
+				Triangle T = added_triangles[j];
+
+				if(T.contains(T1.ind2, T1.ind3)){
+					neighb_tri = T;
+					neighb_tri_ind = j;
+					break;
+				}
+			}
+
+			//No neighbor
+			if(neighb_tri == null){
+				continue;
+			}
+
+			//Pattern2
+			if(Mathf.Abs(T1.ind2 - T1.ind3) == 1){
+				//No trans if constrained edge
+				added_triangles.Add(T1);
+				add_count += 1;
+				continue;
+			}else if(Mathf.Abs(T1.ind1 - neighb_tri.Value.getOpposite(T1)) == 1){
+				//remove T1 and neighb, make new triangles
+				added_triangles.RemoveAt(neighb_tri_ind.Value);
+				removed_tris.Add(neighb_tri.Value);
+				int opposite = neighb_tri.Value.getOpposite(T1);
+				List<Triangle> next = new List<Triangle>(){new Triangle(T1.ind1, T1.ind2, opposite), new Triangle(T1.ind1, opposite, T1.ind3)};
+				transform(next, ref mapped_ring, ref added_triangles, ref add_count, ref removed_tris);
+				continue;
+			}
+
+			//Pattern1
+			if(needRemesh(T1, neighb_tri.Value, ref mapped_ring) || needRemesh(neighb_tri.Value, T1, ref mapped_ring)){
+				added_triangles.RemoveAt(neighb_tri_ind.Value);
+				removed_tris.Add(neighb_tri.Value);
+				int opposite = neighb_tri.Value.getOpposite(T1);
+				List<Triangle> next = new List<Triangle>(){new Triangle(T1.ind1, T1.ind2, opposite), new Triangle(T1.ind1, opposite, T1.ind3)};
+				transform(next, ref mapped_ring, ref added_triangles, ref add_count, ref removed_tris);
+				continue;
+			}else{
+				added_triangles.Add(T1);
+				add_count += 1;
+				continue;
+			}
+		}
+	}
+
+	public static bool isCrossingConstrainedEdge(int target, int ring_count, ref List<Vector2> mapped_ring, ref List<Triangle> added_triangles){
+		
+
+		return false;
+	}
+
+	public static void revert(ref List<Triangle> added_triangles, ref List<Triangle> removed_tris, int add_count){
+
+
+	}
+
+	public static void removeSuperTriangle(int ring_count, ref List<Triangle> added_triangles){
+
+	}
+
+	//referenced http://tercel-sakuragaoka.blogspot.jp/2011/06/processingdelaunay_3958.html
+	public static bool needRemesh(Triangle T1, Triangle T2, ref List<Vector2> mapped_ring){
+		
+		float x1 = mapped_ring[T1.ind1].x;  
+		float y1 = mapped_ring[T1.ind1].y;  
+		float x2 = mapped_ring[T1.ind2].x;  
+		float y2 = mapped_ring[T1.ind2].y;  
+		float x3 = mapped_ring[T1.ind3].x;  
+		float y3 = mapped_ring[T1.ind3].y;  
+			
+		float c = 2.0f * ((x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1));  
+		float x = ((y3 - y1) * (x2 * x2 - x1 * x1 + y2 * y2 - y1 * y1)  
+				+ (y1 - y2) * (x3 * x3 - x1 * x1 + y3 * y3 - y1 * y1))/c;  
+		float y = ((x1 - x3) * (x2 * x2 - x1 * x1 + y2 * y2 - y1 * y1)  
+				+ (x2 - x1) * (x3 * x3 - x1 * x1 + y3 * y3 - y1 * y1))/c;  
+		Vector2 center = new Vector2(x, y);  
+		float r = Vector2.Distance(center, mapped_ring[T1.ind1]);
+		
+		int opposite = T2.getOpposite(T1);
+		Vector2 op = mapped_ring[opposite];
+
+		return r > Vector2.Distance(op, center);
 	}
 
 	//三角形ABDとAEBについて,
