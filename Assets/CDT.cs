@@ -69,6 +69,8 @@ public static class CDT {
 		removeSuperTriangle(ring.Count, ref added_triangles);
 
 		//transform to real indices 
+
+		//TODO
 		return added_triangles;
 	}
 
@@ -100,12 +102,12 @@ public static class CDT {
 			}
 
 			//Pattern2
-			if(Mathf.Abs(T1.ind2 - T1.ind3) == 1){
+			if(Mathf.Abs(T1.ind2 - T1.ind3) == 1 || Mathf.Abs(T1.ind2 - T1.ind3) == mapped_ring.Count - 4){
 				//No trans if constrained edge
 				added_triangles.Add(T1);
 				add_count += 1;
 				continue;
-			}else if(Mathf.Abs(T1.ind1 - neighb_tri.Value.getOpposite(T1)) == 1){
+			}else if(Mathf.Abs(T1.ind1 - neighb_tri.Value.getOpposite(T1)) == 1 || Mathf.Abs(T1.ind1 - neighb_tri.Value.getOpposite(T1)) == mapped_ring.Count - 4){
 				//remove T1 and neighb, make new triangles
 				added_triangles.RemoveAt(neighb_tri_ind.Value);
 				removed_tris.Add(neighb_tri.Value);
@@ -133,8 +135,38 @@ public static class CDT {
 
 	public static bool isCrossingConstrainedEdge(int target, int ring_count, ref List<Vector2> mapped_ring, ref List<Triangle> added_triangles){
 
-		
+		List<Edge> constrained_edges = new List<Edge>();
+		for(int i = 0; i < ring_count - 1; i++){
+			constrained_edges.Add(new Edge(i , i + 1 != ring_count - 1 ? i + 1 : 0));
+		}
+
+		for(int i = 0; i < added_triangles.Count; i++){
+			if(added_triangles[i].contains(target) == 0) continue;
+
+			for(int j = 0; j < constrained_edges.Count; j++){
+				if(crossTest(mapped_ring, added_triangles[i], constrained_edges[j]) >= 2) return true;
+			}
+		}
+
 		return false;
+	}
+
+	public static int crossTest(List<Vector2> mapped_ring, Triangle triangle, Edge constrained_edge){
+		
+		//http://www5d.biglobe.ne.jp/~tomoya03/shtml/algorithm/Intersection.htm
+		int intersection_count = 0;
+		if(isIntersection(mapped_ring[triangle.ind1], mapped_ring[triangle.ind2], mapped_ring[constrained_edge.ind1], mapped_ring[constrained_edge.ind2])) intersection_count += 1;
+		if(isIntersection(mapped_ring[triangle.ind2], mapped_ring[triangle.ind3], mapped_ring[constrained_edge.ind1], mapped_ring[constrained_edge.ind2])) intersection_count += 1;
+		if(isIntersection(mapped_ring[triangle.ind3], mapped_ring[triangle.ind1], mapped_ring[constrained_edge.ind1], mapped_ring[constrained_edge.ind2])) intersection_count += 1;
+		return intersection_count;
+	}
+
+	public static bool isIntersection(Vector2 a, Vector2 b, Vector2 c, Vector2 d){
+		var ta = (c.x - d.x) * (a.y - c.y) + (c.y - d.y) * (c.x - a.x);
+ 		var tb = (c.x - d.x) * (b.y - c.y) + (c.y - d.y) * (c.x - b.x);
+  		var tc = (a.x - b.x) * (c.y - a.y) + (a.y - b.y) * (a.x - c.x);
+  		var td = (a.x - b.x) * (d.y - a.y) + (a.y - b.y) * (a.x - d.x);
+  		return tc * td < 0 && ta * tb < 0;
 	}
 
 	public static void revert(ref List<Triangle> added_triangles, List<Triangle> removed_tris, int add_count){
