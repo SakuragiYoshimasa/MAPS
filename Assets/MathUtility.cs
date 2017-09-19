@@ -40,8 +40,7 @@ public static class MathUtility {
 		bool sign1 = Vector3.Cross(tri[0] - tri[1], tri[0] - p).z > 0;
 		bool sign2 = Vector3.Cross(tri[1] - tri[2], tri[1] - p).z > 0;
 		bool sign3 = Vector3.Cross(tri[2] - tri[0], tri[2] - p).z > 0;
-		return (sign1 && sign2 && sign3);
-		//|| (!sign1 && !sign2 && !sign3);
+		return (sign1 && sign2 && sign3) || (!sign1 && !sign2 && !sign3);
 	}
 
 	public static double calcArea(Vector2 a, Vector2 b){

@@ -15,6 +15,7 @@ public class MAPS : MonoBehaviour {
 	private MapsMesh mmesh;
 	private List<int> all_removed_indices = new List<int>();
 	private List<int> unremoval_indices = new List<int>();
+	public MAPStest testObj;
 
 	List<int> makeCandidate(){
 		List<int> candidate = new List<int>();
@@ -27,7 +28,6 @@ public class MAPS : MonoBehaviour {
 		}
 		return candidate;
 	}
-
 
 	bool levelDown(){
 		bool removed = false;
@@ -75,7 +75,7 @@ public class MAPS : MonoBehaviour {
 			//In Test, implementation is easy one.
 			List<Triangle> added_triangles = new List<Triangle>();
 			if(ring.Count >= 3){
-				added_triangles = Utility.retriangulationFromRing(ring);
+				added_triangles = CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList());
 			}else{ continue; }
 			mmesh.K.triangles.AddRange(added_triangles);
 			
@@ -127,6 +127,7 @@ public class MAPS : MonoBehaviour {
 								theta_of_myu_max = temp_thetas[l + 1 != ring.Count ? l + 1 : 0];
 								ind_min = ring[l];
 								ind_max = ring[l + 1 != ring.Count ? l + 1 : 0];
+								
 							}
 						}
 
@@ -173,13 +174,16 @@ public class MAPS : MonoBehaviour {
 						
 						//Because when this situation, theta_of_myu_max = 2PI.
 						if(ring[0] == ind_max){
-							theta_of_myu_max = theta_of_myu_min;
+							Debug.LogFormat("min:{0}, max:{1}", theta_of_myu_min * a, theta_of_myu_max *a);
+							//theta_of_myu_max = theta_of_myu_min;
 							theta_of_myu_min = 0;
+							Debug.Log("Heare");
 						}
 
 						double deg_min = Vector3.Angle(mmesh.P[ind_min], projected_recalced_p);
 						double deg_max = Vector3.Angle(mmesh.P[ind_max], projected_recalced_p);
 						double theta_of_myu = (theta_of_myu_max - theta_of_myu_min) * deg_min / (deg_min + deg_max) + theta_of_myu_min;
+						theta_of_myu *= a;
 						myu_pi = new Vector2(100f * r_of_myu * Mathf.Cos((float)theta_of_myu), 100f * r_of_myu * Mathf.Sin((float)theta_of_myu));
 
 						Vector2[] checkLocation = new Vector2[3]{new Vector2(0,0), mapped_ring[ind_max], mapped_ring[ind_min]};
@@ -199,6 +203,7 @@ public class MAPS : MonoBehaviour {
 						}
 						
 						if(!MathUtility.checkContain(checkLocation, myu_pi)){
+							testObj.testMappedRing(mapped_ring.Values.ToList(), checkLocation, myu_pi);
 							Debug.LogFormat("Bad location{0}", kv.Value.Count);
 							foreach(KeyValuePair<int, float> pair in kv.Value){
 								Debug.LogFormat("ind:{0}, value:{1}", pair.Key,pair.Value);

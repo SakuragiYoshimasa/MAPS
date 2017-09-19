@@ -74,9 +74,13 @@ public static class CDT {
 		removeSuperTriangle(ring.Count, ref added_triangles, ref mapped_ring);
 
 		//transform to real indices 
+		List<Triangle> converted_added_triangles = new List<Triangle>();
 
-		//TODO
-		return added_triangles;
+		foreach(Triangle T in added_triangles){
+			converted_added_triangles.Add(new Triangle(ring[T.ind1],ring[T.ind2],ring[T.ind3]));
+		}
+
+		return converted_added_triangles;
 	}
 
 	
