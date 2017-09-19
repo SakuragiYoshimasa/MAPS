@@ -18,7 +18,7 @@ public static class CDT {
 		//　すべてのノードについて処理が終了した時点で領域の外に生成された三角形を除去し、メッシュを完成する
 
 		//Make super triangle
-		float super_rad = mapped_ring.Select(pos => pos.magnitude).Max() * 10.0f;
+		float super_rad = mapped_ring.Select(pos => pos.magnitude).Max() * 100.0f;
 		for(int i = 0; i < 3; i++){
 			used_nodes.Add(ring.Count + i);	
 			mapped_ring.Add(new Vector2(super_rad * Mathf.Cos(Mathf.PI * 2.0f / 3.0f * (float)i), super_rad * Mathf.Sin(Mathf.PI * 2.0f / 3.0f * (float)i)));
@@ -31,9 +31,11 @@ public static class CDT {
 		//foreach all ring point, 
 		while(node_queue.Count > 0){
 			int target = node_queue.Dequeue();
+			
+			//if(target == 4) break;
 			//	find a triangle which contain the point
 			int? triangle_ind = null;
-
+			
 			for(int i = 0; i < added_triangles.Count; i++){
 				Triangle T = added_triangles[i];
 				Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
@@ -42,17 +44,18 @@ public static class CDT {
 					break;
 				}
 			}
+		
 			//復元用
-			int add_count = 3;
+			int add_count = 0;
 			List<Triangle> removed_tris = new List<Triangle>();
 
 			//	devide into 3 triangles
 			Triangle devided_tri = added_triangles[triangle_ind.Value];
 			List<Triangle> new_tris = new List<Triangle>(){new Triangle(target, devided_tri.ind1, devided_tri.ind2), new Triangle(target, devided_tri.ind2, devided_tri.ind3), new Triangle(target, devided_tri.ind3, devided_tri.ind1)}; 
 			added_triangles.RemoveAt(triangle_ind.Value);
-			added_triangles.Add(new_tris[0]);
-			added_triangles.Add(new_tris[1]);
-			added_triangles.Add(new_tris[2]);
+			//added_triangles.Add(new_tris[0]);
+			//added_triangles.Add(new_tris[1]);
+			//added_triangles.Add(new_tris[2]);
 			removed_tris.Add(devided_tri);
 
 			//Transformation
@@ -60,13 +63,15 @@ public static class CDT {
 
 			//cross discrimination
 			//revert or not
-			if(isCrossingConstrainedEdge(target, ring.Count, ref mapped_ring, ref added_triangles)){
-				revert(ref added_triangles, removed_tris, add_count);				
-			}
+			//if(isCrossingConstrainedEdge(target, ring.Count, ref mapped_ring, ref added_triangles)){
+			//	revert(ref added_triangles, removed_tris, add_count);				
+				
+			//	node_queue.Enqueue(target);
+			//}
 		}
 
 		//extract super triangle and neighboring edges 
-		removeSuperTriangle(ring.Count, ref added_triangles);
+		removeSuperTriangle(ring.Count, ref added_triangles, ref mapped_ring);
 
 		//transform to real indices 
 
@@ -98,10 +103,13 @@ public static class CDT {
 
 			//No neighbor
 			if(neighb_tri == null){
+				added_triangles.Add(T1);
+				add_count += 1;
 				continue;
 			}
 
 			//Pattern2
+			/* 
 			if(Mathf.Abs(T1.ind2 - T1.ind3) == 1 || Mathf.Abs(T1.ind2 - T1.ind3) == mapped_ring.Count - 4){
 				//No trans if constrained edge
 				added_triangles.Add(T1);
@@ -112,13 +120,15 @@ public static class CDT {
 				added_triangles.RemoveAt(neighb_tri_ind.Value);
 				removed_tris.Add(neighb_tri.Value);
 				int opposite = neighb_tri.Value.getOpposite(T1);
+				
 				List<Triangle> next = new List<Triangle>(){new Triangle(T1.ind1, T1.ind2, opposite), new Triangle(T1.ind1, opposite, T1.ind3)};
 				transform(next, ref mapped_ring, ref added_triangles, ref add_count, ref removed_tris);
 				continue;
 			}
-
+			*/
 			//Pattern1
 			if(needRemesh(T1, neighb_tri.Value, ref mapped_ring) || needRemesh(neighb_tri.Value, T1, ref mapped_ring)){
+				
 				added_triangles.RemoveAt(neighb_tri_ind.Value);
 				removed_tris.Add(neighb_tri.Value);
 				int opposite = neighb_tri.Value.getOpposite(T1);
@@ -170,14 +180,16 @@ public static class CDT {
 	}
 
 	public static void revert(ref List<Triangle> added_triangles, List<Triangle> removed_tris, int add_count){
-
-		added_triangles.RemoveRange(added_triangles.Count - 1 - add_count, added_triangles.Count - 1);
+		Debug.LogFormat("{0}, {1}", add_count, added_triangles.Count);
+		added_triangles.RemoveRange(added_triangles.Count - 1 - add_count, add_count);
+		Debug.LogFormat("{0}, {1}", add_count, added_triangles.Count);
 		added_triangles.AddRange(removed_tris);
 	}
 
-	public static void removeSuperTriangle(int ring_count, ref List<Triangle> added_triangles){
+	public static void removeSuperTriangle(int ring_count, ref List<Triangle> added_triangles, ref List<Vector2> mapped_ring){
 		for(int i = ring_count; i < ring_count + 3; i++){
-
+	
+			mapped_ring.RemoveAt(ring_count);
 			for(int j = 0; j < added_triangles.Count; j++){
 				if(added_triangles[j].contains(i) != 0){
 					added_triangles.RemoveAt(j);
@@ -209,19 +221,5 @@ public static class CDT {
 		Vector2 op = mapped_ring[opposite];
 
 		return r > Vector2.Distance(op, center);
-	}
-
-	//三角形ABDとAEBについて,
-	//ABDの外接円の内部にEがある場合、あるいはAEBの外接園の内部にDがある場合には辺ABを消去して辺DEを生成することにより
-	//ABDとAEBをAEDとBDEに変換する、さもなければ変換されない
-	public static bool transform_1(){
-		return false;
-	}
-
-	//三角形ABDとAEBについて,
-	//辺DEが制約線分である場合にはABDとAEBをAEDとBDEに変換する。逆にABが制約線分である場合には変換してはいけない
-	//どちらともない場合というのは２つに制約線分が含まれていないようなとき
-	public static bool transform_2(){
-		return false;
 	}
 }
