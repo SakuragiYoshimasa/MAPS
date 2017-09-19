@@ -376,6 +376,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   myu_pi_point: {fileID: 1305438050233790, guid: 0a5bee916f01447bea71325fd7864d85,
     type: 2}
+  mf: {fileID: 0}
+  mr: {fileID: 0}
 --- !u!4 &1944051519
 Transform:
   m_ObjectHideFlags: 0
@@ -383,7 +385,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1944051517}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9.414134, y: 6.3638973, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

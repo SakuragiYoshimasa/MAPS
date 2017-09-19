@@ -7,8 +7,8 @@ public static class TestUtility {
 	public static Mesh generateTestMesh(){
 		Mesh m = new Mesh();
 
-		int w = 8;
-		int h = 8;
+		int w = 12;
+		int h = 12;
 
 		List<Vector3> vertices = new List<Vector3>();
 		List<int> indices = new List<int>();

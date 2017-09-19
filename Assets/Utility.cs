@@ -147,6 +147,36 @@ public static class Utility {
 
 	public static List<int> FindRingFromStar(List<Triangle> star, out bool on_boundary){
 
+		//CDTにより重複が生まれてしまった頂点を除いてから処理する
+		//確実に循環が起きるようにする。
+		//出現回数が一回が２つあればそれはon_boundary
+		//２回しかなければ循環確定
+		//３回以上でてしまうとそれは悪い、循環が乱れる
+
+		Dictionary<int, int> index_counter = new Dictionary<int, int>();
+
+		foreach(Triangle T in star){
+			if(!index_counter.ContainsKey(T.ind1)) {index_counter.Add(T.ind1, 1);}
+			else{ index_counter[T.ind1] += 1;}
+			if(!index_counter.ContainsKey(T.ind2)) {index_counter.Add(T.ind2, 1);}
+			else{ index_counter[T.ind2] += 1;}
+			if(!index_counter.ContainsKey(T.ind3)) {index_counter.Add(T.ind3, 1);}
+			else{ index_counter[T.ind3] += 1;}
+		}
+
+		List<int> bad_indices = new List<int>();
+		foreach(KeyValuePair<int, int> kv in index_counter){
+			if(kv.Value >= 3) bad_indices.Add(kv.Key);
+		}
+		//とりあえず１つしかそういうのがないと想定
+		if(bad_indices.Count >= 2){
+			Debug.LogError("Bad indices");
+			for(int i = 0; i < star.Count; i++){
+				if(star[i].contains(bad_indices[0], bad_indices[1])) star.RemoveAt(i--);
+			}
+		}
+
+
 		on_boundary = false;
 		bool flag = true;
 		List<bool> used = new List<bool>();
@@ -181,6 +211,9 @@ public static class Utility {
 					on_boundary = true;
 				}
 			}
+		}
+		if(used.Contains(false) && !on_boundary){
+			Debug.Log("dfgdgdksfdsk;fldslfkds;lfkds;lfsk;");
 		}	
 		return ring;	
 	}
@@ -195,6 +228,7 @@ public static class Utility {
 			var star = stars[first];
 
 			for(int i = 0; i < star.Count; i++){
+				upscebding_priorities.Remove(star[i].ind1);			
 				upscebding_priorities.Remove(star[i].ind2);			
 				upscebding_priorities.Remove(star[i].ind3);
 			}

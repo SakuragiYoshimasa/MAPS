@@ -61,15 +61,19 @@ public struct MapsMesh {
 	}
 
 	public void removeStars(List<Triangle> star){
-
+		//Debug.LogFormat("Before:{0}", K.triangles.Count);
 		foreach(Triangle T in star){
 			for(int j = 0; j < K.triangles.Count; j++){
 				if(K.triangles[j].isEqual(T)){
 					K.triangles.RemoveAt(j);
-					break;
+					//break;
+					j--;
 				}
 			}
 		}
+		
+		//Debug.LogFormat("stars:{0}", star.Count);
+		//Debug.LogFormat("After:{0}", K.triangles.Count);
 	}
 }
 
