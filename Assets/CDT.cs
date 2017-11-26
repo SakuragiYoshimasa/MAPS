@@ -5,7 +5,7 @@ using System.Linq;
 
 public static class CDT {
 	
-	public static List<Triangle> retriangulationFromRingByCDT(List<int> ring, List<Vector2> mapped_ring){
+	public static List<Triangle> retriangulationFromRingByCDT(List<int> ring, List<Vector2> mapped_ring, bool on_boundary){
 		//CDTの適用は擬似indicesで行い、最後に元に戻して返す
 		List<Triangle> added_triangles = new List<Triangle>();
 		List<int> used_nodes = new List<int>();

@@ -13,7 +13,7 @@ public class CDTtest : MonoBehaviour {
 
 		for(int i = 0; i < 10; i++) mapped_ring.Add(new Vector2(2.0f * Mathf.Cos((float)i / 5.0f * Mathf.PI) , 10.0f * Mathf.Sin((float)i / 5.0f * Mathf.PI)));
 		
-		List<Triangle> _tris = CDT.retriangulationFromRingByCDT(ring,mapped_ring);
+		List<Triangle> _tris = CDT.retriangulationFromRingByCDT(ring,mapped_ring, false);
 		List<List<int>> dev_tris = _tris.Select(t => new List<int>(){t.ind1, t.ind2, t.ind3}).ToList();
 		List<int> tris = new List<int>();
 		foreach(List<int> t in dev_tris) tris = tris.Concat(t).ToList();

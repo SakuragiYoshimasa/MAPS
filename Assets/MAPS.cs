@@ -43,7 +43,7 @@ public class MAPS : MonoBehaviour {
 		//by the priorities, select the independent set
 		List<int> remove_indices = Utility.makeRemovedIndices(priorities, stars);
 
-		Debug.Log("About 190");
+		//Debug.Log("About 190");
 		//testObj.testStarMesh(stars[188], mmesh);
 		//foreach(Triangle T in stars[190]){
 		//	Debug.LogFormat("{0},{1},{2}", T.ind1, T.ind2, T.ind3);
@@ -61,12 +61,12 @@ public class MAPS : MonoBehaviour {
 			}
 		
 			//find a ring
-			List<int> ring = Utility.FindRingFromStar(star, out on_boundary);
-			if(on_boundary || ring.Last() != star[0].ind3 || ring.GroupBy(x => x).SelectMany(g => g.Skip(1)).Any()){// continue;
+			List<int> ring = Utility.FindRingFromStar(star, ref on_boundary);
+			//if(on_boundary || ring.Last() != star[0].ind3 || ring.GroupBy(x => x).SelectMany(g => g.Skip(1)).Any()){// continue;
 			//if(ring.Count < 3){
-				unremoval_indices.Add(remove_indices[i]);
-				continue;
-			}
+			//	unremoval_indices.Add(remove_indices[i]);
+			//	continue;
+			//}
 
 			//Add new triangles
 			//Fistly, using conformal map z^a, 1 ring will be flattened
@@ -83,16 +83,10 @@ public class MAPS : MonoBehaviour {
 				unremoval_indices.Add(remove_indices[i]);
 				continue;
 			}
-
-			List<Triangle> added_triangles = CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList());
-			
-			if(remove_indices[i] == 190){
-				Debug.Log("Added");
-				testObj.testStarMesh(added_triangles, mmesh);
-				foreach(Triangle T in added_triangles){
-				Debug.LogFormat("{0},{1},{2}", T.ind1, T.ind2, T.ind3);
-				}	
-			}
+			Debug.Log(ring.Count);
+			Debug.Log(on_boundary);
+			List<Triangle> added_triangles = Utility.retriangulationFromRing(ring, on_boundary);
+			//CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList(), on_boundary);
 			mmesh.K.triangles.AddRange(added_triangles);
 			
 			//Finally, remove triangle and remove vertex from mmesh
@@ -105,6 +99,7 @@ public class MAPS : MonoBehaviour {
 			//When the previous bijection of removed vertex is identity,
 			//Updated bijection of it will be constructed by triangles whrere it on in conformed mapped star.
 			//Detection by cross
+			/* 
 			foreach(KeyValuePair<int, Dictionary<int, float>> kv in mmesh.bijection){
 				//if removed vertex is used for some construction, recalc the construction
 				//https://www.chart.co.jp/subject/sugaku/suken_tsushin/74/74-1.pdf
@@ -146,6 +141,7 @@ public class MAPS : MonoBehaviour {
 
 					if(ind_max == ind_min) {
 						//testObj.testMappedRing(mapped_ring.Values.ToList(), myu_pi);
+						
 						Debug.LogFormat("ring_count:{0}, star_count:{1}", ring.Count, star.Count);
 						Debug.Log("Fucking search");
 						Debug.LogFormat("ind_min:{0}, ind_max{1}", ind_min, ind_max);
@@ -280,7 +276,7 @@ public class MAPS : MonoBehaviour {
 					Debug.Log("Ring");
 					foreach(int r in ring) Debug.Log(r);
 				}
-			}
+			}*/
 			removed = true;
 		}
 		return removed;
@@ -288,7 +284,7 @@ public class MAPS : MonoBehaviour {
 	
 	// Use this for initialization
 	void Start () {
-		//mesh = TestUtility.generateTestMesh();
+		mesh = TestUtility.generateTestMesh();
 		mmesh = MapsUtility.TransformMesh2MapsMesh(ref mesh, numOfFeaturePoints);
 		
 		Mesh m = RemeshUtility.rebuiltMesh(ref mmesh);
@@ -296,8 +292,6 @@ public class MAPS : MonoBehaviour {
 		mf.mesh = m;
 
 		all_removed_indices = new List<int>();
-
-		Debug.Log(mesh.subMeshCount);
 	}
 
 	// Update is called once per frame

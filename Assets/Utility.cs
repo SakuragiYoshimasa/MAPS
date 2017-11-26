@@ -40,22 +40,12 @@ public static class Utility {
 		float temp_sum_theta = 0f;
 		float a = Mathf.PI * (!on_boundary ? 2.0f : 1.0f) / sum_theta;
 
-		if(!on_boundary){
-			for(int l = 0; l < ring.Count(); l++){
-				temp_sum_theta += thetas[l];
-				temp_thetas.Add(temp_sum_theta);
-				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
-				float phai = temp_sum_theta * a;
-				mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
-			}
-		}else{
-			for(int l = 0; l < ring.Count(); l++){
-				temp_thetas.Add(temp_sum_theta);
-				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
-				float phai = temp_sum_theta * a;
-				mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
-				temp_sum_theta += thetas[l];
-			}
+		for(int l = 0; l < ring.Count(); l++){
+			temp_sum_theta += thetas[l];
+			temp_thetas.Add(temp_sum_theta);
+			float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
+			float phai = temp_sum_theta * a;
+			mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
 		}
 
 		return a;
@@ -119,8 +109,8 @@ public static class Utility {
 		return Mathf.Sqrt(a.sqrMagnitude * b.sqrMagnitude - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
 	}
 
-	public static List<Triangle> retriangulationFromRing(List<int> ring){
-
+	public static List<Triangle> retriangulationFromRing(List<int> ring, bool on_boundary){
+		
 		List<Triangle> added_triangles = new List<Triangle>();
 		int fow = 1;
 		int back = 1;
@@ -145,16 +135,15 @@ public static class Utility {
 		return added_triangles;
 	}
 
-	public static List<int> FindRingFromStar(List<Triangle> star, out bool on_boundary){
+	public static List<int> FindRingFromStar(List<Triangle> star, ref bool on_boundary){
 
 		//CDTにより重複が生まれてしまった頂点を除いてから処理する
 		//確実に循環が起きるようにする。
 		//出現回数が一回が２つあればそれはon_boundary
 		//２回しかなければ循環確定
 		//３回以上でてしまうとそれは悪い、循環が乱れる
-
+		/* 
 		Dictionary<int, int> index_counter = new Dictionary<int, int>();
-
 		foreach(Triangle T in star){
 			if(!index_counter.ContainsKey(T.ind1)) {index_counter.Add(T.ind1, 1);}
 			else{ index_counter[T.ind1] += 1;}
@@ -174,8 +163,7 @@ public static class Utility {
 			for(int i = 0; i < star.Count; i++){
 				if(star[i].contains(bad_indices[0], bad_indices[1])) star.RemoveAt(i--);
 			}
-		}
-
+		}*/
 
 		on_boundary = false;
 		bool flag = true;
@@ -190,31 +178,34 @@ public static class Utility {
 		while(flag){
 			if(!used.Contains(false)) break;
 				
-			for(int n = 0; n < star.Count; n++){
+			for(int n = 1; n < star.Count; n++){
 
 				if(!used[n] && star[n].ind2 == ring[ring.Count - 1]){
 					ring.Add(star[n].ind3);
-					if(star[n].ind3 == firstT.ind3)  flag = false;
 					used[n] = true;
 					break;
 				}
 
 				if(!used[n] && star[n].ind3 == ring[ring.Count - 1]){
 					ring.Add(star[n].ind2);
-					if(star[n].ind2 == firstT.ind3) flag = false;
 					used[n] = true;
 					break;
 				}
-					
+
+				//Not Found Ring	
 				if(n == star.Count - 1) {
 					flag = false;
 					on_boundary = true;
 				}
 			}
 		}
+
+		on_boundary = firstT.ind3 != ring[ring.Count - 1];
+
 		if(used.Contains(false) && !on_boundary){
 			Debug.Log("dfgdgdksfdsk;fldslfkds;lfkds;lfsk;");
 		}	
+		
 		return ring;	
 	}
 
