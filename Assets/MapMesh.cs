@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 //definitions of structures
 //P is a set of original positions of vertices.
@@ -8,7 +9,7 @@ using UnityEngine;
 //feature points are selected randomly. TODO: It should be seleced to share between two meshes.
 //bijection phai(K^L) -> phai(K^l). If it is null, it mean identity.
 
-public struct MapsMesh {
+public class MapsMesh {
 	public List<Vector3> P;
 	public Topologies K;
 	public List<int> featurePoints;

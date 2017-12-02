@@ -45,9 +45,17 @@ public static class Utility {
 			temp_thetas.Add(temp_sum_theta);
 			float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
 			float phai = temp_sum_theta * a;
-			mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
-		}
 
+			if(mapped_ring.ContainsKey(ring[l])){
+				Debug.Log("ring start");
+					foreach(int v in ring){
+						Debug.Log(v);
+					}
+				Debug.Log("ring end");
+			}else{
+				mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
+			}
+		}
 		return a;
 	}
 
@@ -134,16 +142,16 @@ public static class Utility {
 		}
 
 		if(on_boundary){
-			Debug.Log("TrisStart");
+			/*Debug.Log("TrisStart");
 			foreach(Triangle T in added_triangles){
 				Debug.LogFormat("Tris {0},{1},{2}", T.ind1, T.ind2, T.ind3);
-			}
+			}*/
 		}
 
 		return added_triangles;
 	}
 
-	public static List<int> FindRingFromStar(List<Triangle> star, ref bool on_boundary){
+	public static List<int> FindRingFromStar(List<Triangle> star, ref bool on_boundary, ref bool invalid){
 
 		//CDTにより重複が生まれてしまった頂点を除いてから処理する
 		//確実に循環が起きるようにする。
@@ -182,12 +190,13 @@ public static class Utility {
 		List<int> ring = new List<int>();
 		used[0] = true;
 		ring.Add(firstT.ind2);
+		ring.Add(firstT.ind3);
 			
 		while(flag){
 			if(!used.Contains(false)) break;
 				
 			for(int n = 1; n < star.Count; n++){
-
+				//後
 				if(!used[n] && star[n].ind2 == ring[ring.Count - 1]){
 					ring.Add(star[n].ind3);
 					used[n] = true;
@@ -200,20 +209,42 @@ public static class Utility {
 					break;
 				}
 
+				//前
+				if(!used[n] && star[n].ind2 == ring[0]){
+					ring.Insert(0, star[n].ind3);
+					used[n] = true;
+					break;
+				}
+
+				if(!used[n] && star[n].ind3 == ring[0]){
+					ring.Insert(0, star[n].ind2);
+					used[n] = true;
+					break;
+				}
+
 				//Not Found Ring	
 				if(n == star.Count - 1) {
+					/*Debug.Log("Not found ring");
+					Debug.Log("ring start");
+					foreach(int v in ring){
+						Debug.Log(v);
+					}
+					Debug.Log("ring end");
+					Debug.Log("Star start");
+					foreach(Triangle T in star){
+						Debug.LogFormat("{0},{1},{2}", T.ind1, T.ind2, T.ind3);
+					}
+					Debug.Log("Star end");*/
+					invalid = true;
 					flag = false;
-					on_boundary = true;
 				}
 			}
 		}
 
-		on_boundary = firstT.ind3 != ring[ring.Count - 1];
-
-		if(used.Contains(false) && !on_boundary){
-			Debug.Log("dfgdgdksfdsk;fldslfkds;lfkds;lfsk;");
-		}	
-		
+		on_boundary = ring[0] != ring[ring.Count - 1];
+		if(!on_boundary){
+			ring.RemoveAt(ring.Count - 1);
+		}		
 		return ring;	
 	}
 

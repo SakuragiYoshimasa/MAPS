@@ -54,20 +54,41 @@ public class MAPS : MonoBehaviour {
 
 			var star = stars[remove_indices[i]];
 			bool on_boundary = false;
+			bool invalid = false;
 
 			if(star.Count < 3 || star.Count > 12) {
 				unremoval_indices.Add(remove_indices[i]);
 				continue;
 			}
-		
+			//Debug.LogFormat("targert {0}", remove_indices[i]);
 			//find a ring
-			List<int> ring = Utility.FindRingFromStar(star, ref on_boundary);
+			/* 
+			Debug.Log("Star start");
+			foreach(Triangle T in star){
+				Debug.LogFormat("{0},{1},{2}", T.ind1, T.ind2, T.ind3);
+			}*/
+			//Debug.Log("Star end");
+			List<int> ring = Utility.FindRingFromStar(star, ref on_boundary, ref invalid);
+			if(invalid){
+				unremoval_indices.Add(remove_indices[i]);
+				continue;
+			}
 			//if(on_boundary || ring.Last() != star[0].ind3 || ring.GroupBy(x => x).SelectMany(g => g.Skip(1)).Any()){// continue;
 			//if(ring.Count < 3){
 			//	unremoval_indices.Add(remove_indices[i]);
 			//	continue;
 			//}
-
+			if(on_boundary){
+			Debug.Log("boundary");
+			//	continue;
+			}
+			/* 
+			Debug.Log("ring start");
+			foreach(int v in ring){
+				Debug.Log(v);
+			}
+			Debug.Log("ring end");
+			*/
 			//Add new triangles
 			//Fistly, using conformal map z^a, 1 ring will be flattened
 			Vector3 pi = mmesh.P[remove_indices[i]];
@@ -83,8 +104,8 @@ public class MAPS : MonoBehaviour {
 				unremoval_indices.Add(remove_indices[i]);
 				continue;
 			}
-			Debug.Log(ring.Count);
-			Debug.Log(on_boundary);
+			//Debug.LogFormat("ringcount:{0}",ring.Count);
+			//Debug.LogFormat("onb :{0}",on_boundary);
 			List<Triangle> added_triangles = Utility.retriangulationFromRing(ring, on_boundary);//CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList(), on_boundary);//
 			//CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList(), on_boundary);
 			mmesh.K.triangles.AddRange(added_triangles);
@@ -284,7 +305,7 @@ public class MAPS : MonoBehaviour {
 	
 	// Use this for initialization
 	void Start () {
-		mesh = TestUtility.generateTestMesh();
+		//mesh = TestUtility.generateTestMesh();
 		mmesh = MapsUtility.TransformMesh2MapsMesh(ref mesh, numOfFeaturePoints);
 		
 		Mesh m = RemeshUtility.rebuiltMesh(ref mmesh);
@@ -327,5 +348,15 @@ public class MAPS : MonoBehaviour {
 				}
 			}
 		}
+	}
+
+	void OnDrawGizmos()
+	{
+	#if UNITY_EDITOR
+		if(mmesh == null){ return; }
+		foreach(Vertex v in mmesh.K.vertices){
+			UnityEditor.Handles.Label(mmesh.P[v.ind], v.ind.ToString());
+		}
+	#endif
 	}
 }
