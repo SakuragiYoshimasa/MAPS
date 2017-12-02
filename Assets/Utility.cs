@@ -132,6 +132,14 @@ public static class Utility {
 				p3 = ring[ring.Count - back];
 			}
 		}
+
+		if(on_boundary){
+			Debug.Log("TrisStart");
+			foreach(Triangle T in added_triangles){
+				Debug.LogFormat("Tris {0},{1},{2}", T.ind1, T.ind2, T.ind3);
+			}
+		}
+
 		return added_triangles;
 	}
 

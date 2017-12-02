@@ -85,7 +85,7 @@ public class MAPS : MonoBehaviour {
 			}
 			Debug.Log(ring.Count);
 			Debug.Log(on_boundary);
-			List<Triangle> added_triangles = Utility.retriangulationFromRing(ring, on_boundary);
+			List<Triangle> added_triangles = Utility.retriangulationFromRing(ring, on_boundary);//CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList(), on_boundary);//
 			//CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList(), on_boundary);
 			mmesh.K.triangles.AddRange(added_triangles);
 			
