@@ -46,11 +46,7 @@ public static class Utility {
 				temp_sum_theta += thetas[l];
 				temp_thetas.Add(temp_sum_theta);
 				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
-				float phai = temp_sum_theta * a;
-				if(on_boundary){
-					//Debug.Log(phai);
-				}
-				
+				float phai = temp_sum_theta * a;				
 				if(mapped_ring.ContainsKey(ring[l])){
 					Debug.Log("ring start");
 						foreach(int v in ring){
@@ -62,16 +58,12 @@ public static class Utility {
 				}
 			}
 		} else {
+			//Enforce to be half disc
 			sum_theta -= thetas[thetas.Count - 1];
 			a = Mathf.PI / sum_theta;
 			for(int l = 0; l < ring.Count(); l++){
-				//temp_sum_theta += thetas[l];
-				//temp_thetas.Add(temp_sum_theta);
 				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
 				float phai = temp_sum_theta * a;
-				if(on_boundary){
-					Debug.Log(phai);
-				}
 				if(mapped_ring.ContainsKey(ring[l])){
 					Debug.Log("ring start");
 						foreach(int v in ring){
@@ -85,7 +77,6 @@ public static class Utility {
 				temp_thetas.Add(temp_sum_theta);
 			}
 		}
-
 		return a;
 	}
 
