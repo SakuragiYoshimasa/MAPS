@@ -42,7 +42,7 @@ public class MAPS : MonoBehaviour {
 
 		//by the priorities, select the independent set
 		List<int> remove_indices = Utility.makeRemovedIndices(priorities, stars);
-		
+		bool tested = false;
 		//flatten and retriangulation
 		for(int i = 0; i < remove_indices.Count(); i++){
 
@@ -75,7 +75,7 @@ public class MAPS : MonoBehaviour {
 				continue;
 			}
 
-			List<Triangle> added_triangles = Utility.retriangulationFromRing(ring, on_boundary);//CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList(), on_boundary);//
+			List<Triangle> added_triangles = Utility.retriangulationFromRing(ring, on_boundary);//CDT.retriangulationFromRingByCDT(ring, mapped_ring.Values.ToList(), on_boundary);
 			mmesh.K.triangles.AddRange(added_triangles);
 			
 			//Finally, remove triangle and remove vertex from mmesh
@@ -93,134 +93,27 @@ public class MAPS : MonoBehaviour {
 				//if removed vertex is used for some construction, recalc the construction
 				//https://www.chart.co.jp/subject/sugaku/suken_tsushin/74/74-1.pdf
 				if(!kv.Value.ContainsKey(remove_indices[i])) continue;
-				
-				int recalced_p_index = kv.Key;
-				Vector3 projected_recalced_p = mmesh.getProjectedPoints(new List<int>{recalced_p_index})[0];
-				Vector2 myu_pi = Vector2.one * 1000.0f;
-				float r_of_myu = Mathf.Pow((projected_recalced_p - pi).magnitude, a);
-				
 				//------------------------------------------------------------------------------
 				//Find update bijection index;
 				//------------------------------------------------------------------------------
-				
+				Vector2 myu_pi = Vector2.one * 1000.0f;
 				int update_bij_ind = kv.Key; //新しい場所を探すkey
+				float al = 0, bet = 0;
 				if(kv.Value.Count == 1){
 					//Initialy bijection[vertexIndex]={vertexIndex:1.0}
 					myu_pi = Vector2.zero;
-				}else if(kv.Value.Count == 2){
-					//case 2, bijection[vertexIndex]={v1:a, v2: b}
-					for(int l = 0; l < ring.Count(); l++){ 
-						//二個で形成されている頂点に関して、そのうちの一個が弾かれるので、ringの中にもう一個存在しているはず。
-						//そのもう一個の検索をする
-						if(kv.Value.ContainsKey(ring[l])){
-							//見つかったら演算してその座標を今の座標系に修正してmyu_piとする
-							//２つの場合片方がremoveされて、その座標は0,0なのでもう片方の座標によって決定される
-							myu_pi = mapped_ring[ring[l]] * kv.Value[ring[l]];
-							break;
-						}
-					}
 				}else if(kv.Value.Count == 3){
 					//３つから構成されている場合
-					float theta_of_myu_min = 0f;
-					float theta_of_myu_max = 0f;
-					int ind_min = 0, ind_max = 0;
-
 					for(int l = 0; l < ring.Count(); l++){
 						if(kv.Value.ContainsKey(ring[l]) && kv.Value.ContainsKey(ring[l + 1 != ring.Count ? l + 1 : 0])){
-							//theta_of_myu_min = temp_thetas[l];
-							//theta_of_myu_max = temp_thetas[l + 1 != ring.Count ? l + 1 : 0];
-							ind_min = ring[l];
-							ind_max = ring[l + 1 != ring.Count ? l + 1 : 0];
+							int ind_min = ring[l];
+							int ind_max = ring[l + 1 != ring.Count ? l + 1 : 0];
+							al = kv.Value[ind_min];
+							bet = kv.Value[ind_max];
 							myu_pi = mapped_ring[ind_min] * kv.Value[ind_min] + mapped_ring[ind_max] * kv.Value[ind_max];
 							break;
 						}
 					}
-
-					if(ind_max == ind_min) {
-						//testObj.testMappedRing(mapped_ring.Values.ToList(), myu_pi);
-						
-						Debug.LogFormat("ring_count:{0}, star_count:{1}", ring.Count, star.Count);
-						Debug.Log("Fucking search");
-						Debug.LogFormat("ind_min:{0}, ind_max{1}", ind_min, ind_max);
-						Debug.Log("Ring");
-						foreach(int r in ring){
-							Debug.Log(r);
-						}
-						Debug.Log("Star");
-						foreach(Triangle t in star){
-							Debug.LogFormat("{0}, {1}, {2}", t.ind1, t.ind2, t.ind3);
-						}
-
-						Debug.Log("hoshii in");
-						foreach(KeyValuePair<int, float> che in kv.Value){
-							if(che.Key != remove_indices[i]){
-								Debug.Log(che.Key);
-								if(all_removed_indices.Contains(che.Key)){
-									Debug.Log("searching removed index");
-								}
-							}
-						}
-						Debug.Log("All Tris");
-						foreach(Triangle t in mmesh.K.triangles){	
-							if(t.isEqual(new Triangle(kv.Value.ElementAt(0).Key, kv.Value.ElementAt(1).Key, kv.Value.ElementAt(2).Key))){
-								Debug.Log("this is a same triangleewfowepfjkweopfjewpofjwepfojwefpowe");
-							}
-						}
-						Debug.Log("removed tris");
-						foreach(KeyValuePair<int, List<Triangle>> s in stars){
-							foreach(Triangle t in s.Value){
-							if(t.isEqual(new Triangle(kv.Value.ElementAt(0).Key, kv.Value.ElementAt(1).Key, kv.Value.ElementAt(2).Key))){
-								Debug.LogFormat("Please don't extract this trianfleffe:{0},{1},{2}", t.ind1,t.ind2,t.ind3);
-								Debug.LogFormat("Now:{0}, This:{1}", remove_indices[i], s.Key);
-							}
-							}
-						}
-					} 
-						
-					//Because when this situation, theta_of_myu_max = 2PI.
-					/* 
-					if(ring[0] == ind_max) theta_of_myu_min = 0;
-					double deg_min = Vector3.Angle(mmesh.P[ind_min], projected_recalced_p);
-					double deg_max = Vector3.Angle(mmesh.P[ind_max], projected_recalced_p);
-					double theta_of_myu = (theta_of_myu_max - theta_of_myu_min) * deg_min / (deg_min + deg_max) + theta_of_myu_min;
-					theta_of_myu *= a;
-					myu_pi = new Vector2(100f * r_of_myu * Mathf.Cos((float)theta_of_myu), 100f * r_of_myu * Mathf.Sin((float)theta_of_myu));
-					*/
-					//Vector2[] checkLocation = new Vector2[3]{new Vector2(0,0), mapped_ring[ind_max], mapped_ring[ind_min]};
-					/* 
-					int loop = 0;
-					while(!MathUtility.checkContain(checkLocation, myu_pi)){
-						//calc distance and nearest line is where on the myu_pi on
-						int[] nearest_line_ind = Utility.calcMostNearestLineOfTriangle(myu_pi, checkLocation);
-						float delta = 0.01f;
-						//Force translate to make myu_pi on the triangle
-						//add other points component and translate
-						for(int rem = 0; rem < 3; rem++){
-							if(!nearest_line_ind.Contains(rem)) myu_pi += delta * (checkLocation[rem] - myu_pi);
-						}
-						if(loop > 10) break;
-						loop+=1;
-					}*/
-					/* 
-					if(!MathUtility.checkContain(checkLocation, myu_pi)){
-						testObj.testMappedRing(mapped_ring.Values.ToList(), checkLocation, myu_pi);
-						Debug.LogFormat("Bad location{0}", kv.Value.Count);
-						foreach(KeyValuePair<int, float> pair in kv.Value){
-							Debug.LogFormat("ind:{0}, value:{1}", pair.Key,pair.Value);
-						}
-						Debug.LogFormat("points0:{0:f}, {1:f}", checkLocation[0].x, checkLocation[0].y);
-						Debug.LogFormat("points1:{0:f}, {1:f}", checkLocation[1].x, checkLocation[1].y);
-						Debug.LogFormat("points2:{0:f}, {1:f}", checkLocation[2].x, checkLocation[2].y);
-						Debug.LogFormat("myu_pi:{0:f}, {1:f}", myu_pi.x, myu_pi.y);
-						//Debug.Log("inds:" + ind_min.ToString() + "," + ind_max.ToString() + " deg_min:" + deg_min.ToString() + " max:" + deg_max.ToString()+" r_of_myu:" + r_of_myu.ToString()+" Theta_of_nyu:" + theta_of_myu.ToString()+" Myu_pi:" + myu_pi[0].ToString() + ":" + myu_pi[1].ToString());
-						//Debug.LogFormat("alpha{0:f}, beta{1:f}, gamma{2:f}", param[0], param[1], param[2]);
-					}*/
-				}
-
-				//Calc center of mapped ring to refine myu_pi.
-				Vector2 center = new Vector2(0,0);
-				foreach(KeyValuePair<int, Vector2> mp in mapped_ring){
-					center += mp.Value / (float)(mapped_ring.Count);
 				}
 
 				//find triangle which contain myu_pi
@@ -229,69 +122,55 @@ public class MAPS : MonoBehaviour {
 				//------------------------------------------------------------------------------
 				//Find update bijection index;
 				//------------------------------------------------------------------------------
+				//Calc center of mapped ring to refine myu_pi.
+				Vector2 center = new Vector2(0,0);
+				foreach(KeyValuePair<int, Vector2> mp in mapped_ring){
+					center += mp.Value / (float)(mapped_ring.Count);
+				}
+
 				found = false;
-				while(!found){
+				int nloop = 0;
+				while(!found && nloop < 10){
 					foreach(Triangle T in added_triangles){
 
 						Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
-
-						//If only have one triangle, it may on the boundary and fail here.
-						//So, force to translate to in the triangle.
-						int loop = 0;
-						Vector2 temp_myu_pi = myu_pi;
-						while(added_triangles.Count == 1 && !MathUtility.checkContain(points, temp_myu_pi)){
-							//calc distance and nearest line is where on the myu_pi on
-							int[] nearest_line_ind = Utility.calcMostNearestLineOfTriangle(myu_pi, points);
-							float delta = 0.01f;
-							//Force translate to make myu_pi on the triangle
-							//add other points component and translate
-							for(int rem = 0; rem < 3; rem++){
-								if(!nearest_line_ind.Contains(rem)) temp_myu_pi += delta * (points[rem] - temp_myu_pi);
-							}
-							if(loop > 10) break;
-							loop+=1;
-						}
-						//on_boundaryの場合、最初の一個の三角形に絶対入るようになる。
-						//もしこれで他のが見つかるならばそれでいい
-						//if(!MathUtility.checkContain(points, myu_pi) && !on_boundary) continue;
 						if(!MathUtility.checkContain(points, myu_pi)) continue;
-						if(found) {
+						/*if(found && !tested) {
 							Debug.LogFormat("Bad Alrogi pattern3 {0}", on_boundary);
-						}
-						found = true; //Found
-						//Parametarize
+							testObj.testMappedRing(mapped_ring.Values.ToList(), myu_pi);
+
+							foreach(int key in mapped_ring.Keys.ToArray()){
+								Debug.LogFormat("Key: {0}", key);
+							}
+
+							foreach(Triangle T0 in added_triangles){
+								Debug.LogFormat("T: {0}, {1}, {2}", T0.ind1, T0.ind2, T0.ind3);
+							}
+							tested = true;
+						}*/
+						found = true;
 						points = points.Select(p => p - myu_pi).ToArray();
 						double[] param = new double[4]{MathUtility.calcArea(points[1], points[2]), MathUtility.calcArea(points[2], points[0]), MathUtility.calcArea(points[0], points[1]), 0};
 						for(int x = 0; x < 3; x++) param[x] = double.IsNaN(param[x]) ? 0 : param[x];
 						double params_sum = param.Sum();
 						param = param.Select(p => p / params_sum).ToArray();
-						//double threshold = 0.0001;
-						//double param_sub = param.Where(p => p < threshold).Sum();
-
 						mmesh.bijection[update_bij_ind].Clear();
-						/* 
-						if(param[0] > threshold) mmesh.bijection[update_bij_ind].Add(T.ind1, (float)(param[0] + param_sub / 2.0));
-						if(param[1] > threshold) mmesh.bijection[update_bij_ind].Add(T.ind2, (float)(param[1] + param_sub / 2.0));
-						if(param[2] > threshold) mmesh.bijection[update_bij_ind].Add(T.ind3, (float)(param[2] + param_sub / 2.0));
-						*/
 						mmesh.bijection[update_bij_ind].Add(T.ind1, (float)(param[0]));
 						mmesh.bijection[update_bij_ind].Add(T.ind2, (float)(param[1]));
 						mmesh.bijection[update_bij_ind].Add(T.ind3, (float)(param[2]));
 					}
-
 					myu_pi += 0.001f * (center - myu_pi);
+					nloop++;
 				}
 				if(!found){
 					Debug.LogFormat("Not Found! {0}, {1} removing{2}", kv.Key, kv.Value.Count, remove_indices[i]);
 					Debug.Log(myu_pi);
+					Debug.LogFormat("al:{0}, bet:{1}", al, bet);
 					Debug.Log(on_boundary);
 					foreach(Vector2 v in mapped_ring.Values){
 						Debug.Log(v);
 					}
-					//Debug.Log("removed tris");
-					//foreach(Triangle t in star)Debug.LogFormat("{0},{1},{2}", t.ind1,t.ind2,t.ind3);
-					//Debug.Log("Ring");
-					//foreach(int r in ring) Debug.Log(r);
+
 				}
 			}
 			removed = true;
@@ -301,7 +180,7 @@ public class MAPS : MonoBehaviour {
 	
 	// Use this for initialization
 	void Start () {
-		mesh = TestUtility.generateTestMesh();
+		//mesh = TestUtility.generateTestMesh();
 		mmesh = MapsUtility.TransformMesh2MapsMesh(ref mesh, numOfFeaturePoints);
 		
 		Mesh m = RemeshUtility.rebuiltMesh(ref mmesh);
@@ -339,13 +218,12 @@ public class MAPS : MonoBehaviour {
 		}
 	}
 
-	void OnDrawGizmos()
-	{
-	#if UNITY_EDITOR
+	void OnDrawGizmos(){
+		#if UNITY_EDITOR
 		if(mmesh == null){ return; }
 		foreach(Vertex v in mmesh.K.vertices){
 			UnityEditor.Handles.Label(mmesh.P[v.ind], v.ind.ToString());
 		}
-	#endif
+		#endif
 	}
 }

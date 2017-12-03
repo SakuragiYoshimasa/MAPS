@@ -35,11 +35,16 @@ public static class MathUtility {
 		return 0;
 	}
 
-		//http://ja.akionux.net/wiki/index.php/点の三角形内外判別法
+	//http://ja.akionux.net/wiki/index.php/点の三角形内外判別法
+	//http://www.sousakuba.com/Programming/gs_hittest_point_triangle.html
 	public static bool checkContain(Vector2[] tri, Vector2 p){
-		bool sign1 = Vector3.Cross(tri[0] - tri[1], tri[0] - p).z > 0;
-		bool sign2 = Vector3.Cross(tri[1] - tri[2], tri[1] - p).z > 0;
-		bool sign3 = Vector3.Cross(tri[2] - tri[0], tri[2] - p).z > 0;
+		//A=0, B=1, C=2 
+		//AB = 1-0 BP = p - 1
+		//BC = 2-1 CP = p - 2
+		//CA = 0-2 AP = p - 0
+		bool sign1 = Vector3.Cross(tri[1] - tri[0], p - tri[1]).z > 0;
+		bool sign2 = Vector3.Cross(tri[2] - tri[1], p - tri[2]).z > 0;
+		bool sign3 = Vector3.Cross(tri[0] - tri[2], p - tri[0]).z > 0;
 		return (sign1 && sign2 && sign3) || (!sign1 && !sign2 && !sign3);
 	}
 

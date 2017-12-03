@@ -48,6 +48,7 @@ public static class Utility {
 				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
 				float phai = temp_sum_theta * a;				
 				if(mapped_ring.ContainsKey(ring[l])){
+					Debug.Log("contain same index");
 					Debug.Log("ring start");
 						foreach(int v in ring){
 							Debug.Log(v);
@@ -60,11 +61,12 @@ public static class Utility {
 		} else {
 			//Enforce to be half disc
 			sum_theta -= thetas[thetas.Count - 1];
-			a = Mathf.PI / sum_theta;
+			a = Mathf.PI / sum_theta; 
 			for(int l = 0; l < ring.Count(); l++){
 				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
 				float phai = temp_sum_theta * a;
 				if(mapped_ring.ContainsKey(ring[l])){
+					Debug.Log("contain same index");
 					Debug.Log("ring start");
 						foreach(int v in ring){
 							Debug.Log(v);
@@ -154,21 +156,17 @@ public static class Utility {
 				p1 = p2;
 				p2 = ring[fow];
 				p3 = ring[ring.Count - back];
+
+				//if(p1 == p2 || p1 == p3 || p2 == p3){ break; }
+
 			}else{
 				back++;
 				p1 = p3;
 				p2 = ring[fow];
 				p3 = ring[ring.Count - back];
+				//if(p1 == p2 || p1 == p3 || p2 == p3){ break; }
 			}
 		}
-
-		if(on_boundary){
-			/*Debug.Log("TrisStart");
-			foreach(Triangle T in added_triangles){
-				Debug.LogFormat("Tris {0},{1},{2}", T.ind1, T.ind2, T.ind3);
-			}*/
-		}
-
 		return added_triangles;
 	}
 

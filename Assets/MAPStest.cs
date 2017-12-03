@@ -105,9 +105,6 @@ public class MAPStest : MonoBehaviour {
 		m.SetIndices(tris.ToArray(), MeshTopology.Triangles, 0);
 		
 		List<Color> colors = Enumerable.Range(0, mapped_ring.Count + 1).Select(v => new Color(0f, 1.0f, 0, 1.0f)).ToList();
-
-
-		Debug.Log(colors.Count);
 		m.SetColors(colors);
 		mf.mesh = m;
 
