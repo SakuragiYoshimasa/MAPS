@@ -8,10 +8,12 @@ public class MAPStest : MonoBehaviour {
 	public GameObject myu_pi_point;
 	public MeshFilter mf;
 	public MeshRenderer mr;
+	public Material testMat;
 
 	void Start(){
 		mf = this.gameObject.AddComponent<MeshFilter>();
 		mr = this.gameObject.AddComponent<MeshRenderer>();
+		mr.material = testMat;
 	}
 
 	public void testStarMesh(List<Triangle> star, MapsMesh mapsMesh){

@@ -44,6 +44,10 @@ public static class CDT {
 					break;
 				}
 			}
+			if(triangle_ind == null){
+				Debug.Log("NULL");
+			}
+			
 		
 			//復元用
 			int add_count = 0;

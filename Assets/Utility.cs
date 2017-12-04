@@ -27,7 +27,7 @@ public static class Utility {
 	}
 
 	//Return a
-	public static float calcMappedRing(MapsMesh mmesh, Vector3 pi, List<int> ring, bool on_boundary,ref List<float> thetas, ref List<float> temp_thetas, ref Dictionary<int, Vector2> mapped_ring){
+	public static float calcMappedRing(MapsMesh mmesh, Vector3 pi, List<int> ring, bool on_boundary,ref List<float> thetas, ref List<float> temp_thetas, ref Dictionary<int, Vector2> mapped_ring, ref bool needCheckStar){
 
 		List<Vector3> ring_vs = new List<Vector3>();
 		thetas = new List<float>();
@@ -54,6 +54,7 @@ public static class Utility {
 							Debug.Log(v);
 					}
 					Debug.Log("ring end");
+					needCheckStar = true;
 				}else{
 					mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
 				}
@@ -72,6 +73,7 @@ public static class Utility {
 							Debug.Log(v);
 					}
 					Debug.Log("ring end");
+					needCheckStar = true;
 				}else{
 					mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
 				}
@@ -124,6 +126,18 @@ public static class Utility {
 			curvature /= area / 3.0f / 180.0f * Mathf.PI;
 			areas.Add(area);
 			curvatures.Add(curvature);
+
+			/* 
+			for(int t = 0; t < star.Count; t++){
+				for(int s = t + 1; s < star.Count; s++){
+					if(star[t].isEqual(star[s])){
+						star.RemoveAt(s);
+						s--;
+					}
+				}
+			}*/
+
+
 			stars.Add(candidate[i] ,star);
 
 			maxArea = maxArea < area ? area : maxArea;
@@ -148,23 +162,21 @@ public static class Utility {
 		int p1 = ring[0];
 		int p2 = ring[fow];
 		int p3 = ring[ring.Count - back];
-		while(fow < ring.Count - back){
+		while(true){
 			added_triangles.Add(new Triangle(p1, p3, p2));
-			
+
 			if(fow == back){
 				fow++;
 				p1 = p2;
 				p2 = ring[fow];
 				p3 = ring[ring.Count - back];
-
-				//if(p1 == p2 || p1 == p3 || p2 == p3){ break; }
-
+				if(p1 == p2 || p2 == p3 || p1 == p3){ break; }
 			}else{
 				back++;
 				p1 = p3;
 				p2 = ring[fow];
 				p3 = ring[ring.Count - back];
-				//if(p1 == p2 || p1 == p3 || p2 == p3){ break; }
+				if(p1 == p2 || p2 == p3 || p1 == p3){ break; }
 			}
 		}
 		return added_triangles;
@@ -243,17 +255,6 @@ public static class Utility {
 
 				//Not Found Ring	
 				if(n == star.Count - 1) {
-					/*Debug.Log("Not found ring");
-					Debug.Log("ring start");
-					foreach(int v in ring){
-						Debug.Log(v);
-					}
-					Debug.Log("ring end");
-					Debug.Log("Star start");
-					foreach(Triangle T in star){
-						Debug.LogFormat("{0},{1},{2}", T.ind1, T.ind2, T.ind3);
-					}
-					Debug.Log("Star end");*/
 					invalid = true;
 					flag = false;
 				}

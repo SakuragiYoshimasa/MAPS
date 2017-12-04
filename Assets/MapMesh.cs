@@ -13,28 +13,29 @@ public class MapsMesh {
 	public List<Vector3> P;
 	public Topologies K;
 	public List<int> featurePoints;
-	public Dictionary<int, Dictionary<int, float>> bijection;
+	public List<Dictionary<int, float>> bijection;
 
 	public MapsMesh (List<Vector3> ps, Topologies topo, List<int> fps){
 		P = ps;
 		K = topo;
 		featurePoints = fps;
-		bijection = new Dictionary<int, Dictionary<int, float>>(); 
+		bijection = new List<Dictionary<int, float> >(); 
 
 		for(int i = 0; i < P.Count; i++){
-			bijection.Add(i, new Dictionary<int, float>());
+			bijection.Add(new Dictionary<int, float>());
 			bijection[i].Add(i, 1.0f);
 		}
 	}
-
+	/* 
 	public List<int> FindBiject(int ind1, int ind2, int ind3){
 		List<int> result = new List<int>();
 
-		foreach(KeyValuePair<int, Dictionary<int, float>> b in bijection){
-			if(b.Value.ContainsKey(ind1) && b.Value.ContainsKey(ind2) && b.Value.ContainsKey(ind3)) result.Add(b.Key);
+		for(int i = 0; i < bijection.Count; i++){
+			Dictionary<int, float> b = bijection[i];
+			if(b.ContainsKey(ind1) && b.ContainsKey(ind2) && b.ContainsKey(ind3)) result.Add(i);
 		}
 		return result;
-	}
+	}*/
 
 	public List<Vector3> getProjectedPoints(List<int> indices){
 		List<Vector3> projected_points = new List<Vector3>();
