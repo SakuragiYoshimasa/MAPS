@@ -85,7 +85,13 @@ public class MAPS : MonoBehaviour {
 				continue;
 			}
 
-			List<Triangle> added_triangles = CDT.retriangulationFromRingByCDT(ring, mapped_ring, on_boundary); 
+			List<Triangle> added_triangles = null;
+			bool found_triangles = TrianglationNet.triangulateFromRing(ring, mapped_ring, out added_triangles);
+			if(!found_triangles){
+				unremoval_indices.Add(remove_indices[i]);
+				continue;
+			}
+			//CDT.retriangulationFromRingByCDT(ring, mapped_ring, on_boundary); 
 			//Utility.retriangulationFromRing(ring, on_boundary);
 			/*if(remove_indices[i] == 18){
 				foreach(Triangle T0 in added_triangles){
