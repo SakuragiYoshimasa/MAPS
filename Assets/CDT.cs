@@ -5,7 +5,7 @@ using System.Linq;
 
 public static class CDT {
 	
-	public static List<Triangle> retriangulationFromRingByCDT(List<int> ring, List<Vector2> mapped_ring, bool on_boundary){
+	public static List<Triangle> retriangulationFromRingByCDT(List<int> ring, Dictionary<int,Vector2> mapped_ring, bool on_boundary){
 		//CDTの適用は擬似indicesで行い、最後に元に戻して返す
 		List<Triangle> added_triangles = new List<Triangle>();
 		List<int> used_nodes = new List<int>();
@@ -18,10 +18,16 @@ public static class CDT {
 		//　すべてのノードについて処理が終了した時点で領域の外に生成された三角形を除去し、メッシュを完成する
 
 		//Make super triangle
-		float super_rad = mapped_ring.Select(pos => pos.magnitude).Max() * 100.0f;
+		List<Vector2> temp_mapped_ring = new List<Vector2>();
+		for(int i = 0; i < ring.Count; i++){
+			temp_mapped_ring.Add(mapped_ring[ring[i]]);
+		}
+
+		float super_rad = mapped_ring.Select(pos => pos.Value.magnitude).Max() * 100.0f;
+
 		for(int i = 0; i < 3; i++){
 			used_nodes.Add(ring.Count + i);	
-			mapped_ring.Add(new Vector2(super_rad * Mathf.Cos(Mathf.PI * 2.0f / 3.0f * (float)i), super_rad * Mathf.Sin(Mathf.PI * 2.0f / 3.0f * (float)i)));
+			temp_mapped_ring.Add(new Vector2(super_rad * Mathf.Cos(Mathf.PI * 2.0f / 3.0f * (float)i), super_rad * Mathf.Sin(Mathf.PI * 2.0f / 3.0f * (float)i)));
 		}
 		added_triangles.Add(new Triangle(ring.Count, ring.Count + 1, ring.Count + 2));
 		
@@ -38,8 +44,8 @@ public static class CDT {
 			
 			for(int i = 0; i < added_triangles.Count; i++){
 				Triangle T = added_triangles[i];
-				Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
-				if(MathUtility.checkContain(points, mapped_ring[target])){
+				Vector2[] points = new Vector2[3]{temp_mapped_ring[T.ind1], temp_mapped_ring[T.ind2], temp_mapped_ring[T.ind3]};
+				if(MathUtility.checkContain(points, temp_mapped_ring[target])){
 					triangle_ind = i;
 					break;
 				}
@@ -63,7 +69,7 @@ public static class CDT {
 			removed_tris.Add(devided_tri);
 
 			//Transformation
-			transform(new_tris, ref mapped_ring, ref added_triangles, ref add_count, ref removed_tris);
+			transform(new_tris, ref temp_mapped_ring, ref added_triangles, ref add_count, ref removed_tris);
 
 			//cross discrimination
 			//revert or not
@@ -75,7 +81,7 @@ public static class CDT {
 		}
 
 		//extract super triangle and neighboring edges 
-		removeSuperTriangle(ring.Count, ref added_triangles, ref mapped_ring);
+		removeSuperTriangle(ring.Count, ref added_triangles, ref temp_mapped_ring);
 
 		//transform to real indices 
 		List<Triangle> converted_added_triangles = new List<Triangle>();

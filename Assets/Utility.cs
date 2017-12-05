@@ -35,7 +35,10 @@ public static class Utility {
 		mapped_ring = new Dictionary<int, Vector2>();
 		foreach(int ind in ring) ring_vs.Add(mmesh.P[ind]);
 
-		for(int l = 0; l < ring.Count(); l++) thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l - 1 != -1 ? l -1 : ring.Count - 1] - pi, ring_vs[l] - pi));
+		for(int l = 0; l < ring.Count(); l++){
+			//回転方向の統一
+			thetas.Add(Mathf.PI / 180.0f * Vector3.Angle(ring_vs[l - 1 != -1 ? l -1 : ring.Count - 1] - pi, ring_vs[l] - pi));
+		}
 		float sum_theta = thetas.Sum();
 		float temp_sum_theta = 0f;
 		float a = Mathf.PI * (!on_boundary ? 2.0f : 1.0f) / sum_theta;
@@ -48,13 +51,13 @@ public static class Utility {
 				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
 				float phai = temp_sum_theta * a;				
 				if(mapped_ring.ContainsKey(ring[l])){
-					Debug.Log("contain same index");
+					/*Debug.Log("contain same index");
 					Debug.Log("ring start");
 						foreach(int v in ring){
 							Debug.Log(v);
 					}
 					Debug.Log("ring end");
-					needCheckStar = true;
+					needCheckStar = true;*/
 				}else{
 					mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
 				}
@@ -87,14 +90,11 @@ public static class Utility {
 	public static void calcPrioritiesAndStars(MapsMesh mmesh, List<int> candidate, out Dictionary<int ,List<Triangle>> stars, out Dictionary<int, float> priorities){
 		priorities = new Dictionary<int, float>();
 		stars = new Dictionary<int ,List<Triangle>>();
-
 		List<double> areas = new List<double>();
 		List<double> curvatures = new List<double>();
-		
-		double lambda = 0.9;
+		double lambda = 0.8;
 		double maxArea = 0;
 		double maxCurvature = 0;
-
 		//Calculate areas and apploximate gauss curvatures
 		for(int i = 0; i < candidate.Count; i++){
 			
@@ -105,41 +105,23 @@ public static class Utility {
 			for(int j = 0; j < mmesh.K.triangles.Count; j++){
 				
 				int pos = mmesh.K.triangles[j].contains(candidate[i]);
-
 				if(pos != 0){
 					int[] triangle = mmesh.K.triangles[j].getT(pos);
-
 					star.Add(new Triangle(triangle[0], triangle[1], triangle[2]));
-
 					Vector3 p0 = mmesh.P[triangle[0]];
 					Vector3 p1 = mmesh.P[triangle[1]];
 					Vector3 p2 = mmesh.P[triangle[2]];
 					Vector3 a = p1 - p0;
 					Vector3 b = p2 - p0;
-
 					area += calcArea(a, b);
 					curvature -= Vector3.Angle(a, b);
 				}
 			}
-
 			//Approcimate gauss curvature
 			curvature /= area / 3.0f / 180.0f * Mathf.PI;
 			areas.Add(area);
 			curvatures.Add(curvature);
-
-			/* 
-			for(int t = 0; t < star.Count; t++){
-				for(int s = t + 1; s < star.Count; s++){
-					if(star[t].isEqual(star[s])){
-						star.RemoveAt(s);
-						s--;
-					}
-				}
-			}*/
-
-
 			stars.Add(candidate[i] ,star);
-
 			maxArea = maxArea < area ? area : maxArea;
 			maxCurvature = maxCurvature < curvature ? curvature : maxCurvature;
 		}
@@ -163,20 +145,18 @@ public static class Utility {
 		int p2 = ring[fow];
 		int p3 = ring[ring.Count - back];
 		while(true){
-			added_triangles.Add(new Triangle(p1, p3, p2));
-
+			if(p1 == p2 || p2 == p3 || p1 == p3){ break; }
+			added_triangles.Add(new Triangle(p1, p2, p3));
 			if(fow == back){
 				fow++;
 				p1 = p2;
 				p2 = ring[fow];
 				p3 = ring[ring.Count - back];
-				if(p1 == p2 || p2 == p3 || p1 == p3){ break; }
 			}else{
 				back++;
 				p1 = p3;
 				p2 = ring[fow];
 				p3 = ring[ring.Count - back];
-				if(p1 == p2 || p2 == p3 || p1 == p3){ break; }
 			}
 		}
 		return added_triangles;

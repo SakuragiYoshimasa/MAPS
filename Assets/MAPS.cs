@@ -16,6 +16,7 @@ public class MAPS : MonoBehaviour {
 	private List<int> all_removed_indices = new List<int>();
 	private List<int> unremoval_indices = new List<int>();
 	public MAPStest testObj;
+	private Mesh m;
 
 	List<int> makeCandidate(){
 		List<int> candidate = new List<int>();
@@ -70,12 +71,12 @@ public class MAPS : MonoBehaviour {
 
 			bool needCheckbool = false;
 			float a = Utility.calcMappedRing(mmesh, pi, ring, on_boundary, ref thetas, ref temp_thetas, ref mapped_ring, ref needCheckbool);
-
+			/* 
 			if(needCheckbool){
 				foreach(Triangle T0 in star){
 					Debug.LogFormat("T: {0}, {1}, {2}", T0.ind1, T0.ind2, T0.ind3);
 				}	
-			}
+			}*/
 
 			//Secondly, retriangulation by a constrained Delauney triangulation
 			//In Test, implementation is easy one.
@@ -84,7 +85,13 @@ public class MAPS : MonoBehaviour {
 				continue;
 			}
 
-			List<Triangle> added_triangles = Utility.retriangulationFromRing(ring, on_boundary);
+			List<Triangle> added_triangles = CDT.retriangulationFromRingByCDT(ring, mapped_ring, on_boundary); 
+			//Utility.retriangulationFromRing(ring, on_boundary);
+			/*if(remove_indices[i] == 18){
+				foreach(Triangle T0 in added_triangles){
+					Debug.LogFormat("T: {0}, {1}, {2}", T0.ind1, T0.ind2, T0.ind3);
+				}
+			}*/
 			mmesh.K.triangles.AddRange(added_triangles);
 			
 			//Finally, remove triangle and remove vertex from mmesh
@@ -98,6 +105,7 @@ public class MAPS : MonoBehaviour {
 			//Updated bijection of it will be constructed by triangles whrere it on in conformed mapped star.
 			//Detection by cross
 			//KeyValuePair<vertexIndex, bijection<>> initialy bijection[vertexIndex]={vertexIndex:1.0}
+			
 			foreach(Dictionary<int, float> kv in mmesh.bijection){
 				//if removed vertex is used for some construction, recalc the construction
 				//https://www.chart.co.jp/subject/sugaku/suken_tsushin/74/74-1.pdf
@@ -163,20 +171,15 @@ public class MAPS : MonoBehaviour {
 						double params_sum = param.Sum();
 						param = param.Select(p => p / params_sum).ToArray();
 						kv.Clear();
-						/* 
-						mmesh.bijection[update_bij_ind].Add(T.ind1, (float)(param[0]));
-						mmesh.bijection[update_bij_ind].Add(T.ind2, (float)(param[1]));
-						mmesh.bijection[update_bij_ind].Add(T.ind3, (float)(param[2]));
-						*/
-						kv.Add(T.ind1, 1.0f/3.0f);
-						kv.Add(T.ind2, 1.0f/3.0f);
-						kv.Add(T.ind3, 1.0f/3.0f);
+						kv.Add(T.ind1, (float)(param[0]));
+						kv.Add(T.ind2, (float)(param[1]));
+						kv.Add(T.ind3, (float)(param[2]));
 					}
 					myu_pi += 0.01f * (center - myu_pi);
 					nloop++;
 				}
 				if(!found && false){
-					//Debug.LogFormat("Not Found! {0}, {1} removing{2}", kv.Key, kv.Value.Count, remove_indices[i]);
+					Debug.LogFormat("Not Found! {0}, {1} removing{2}", kv.Keys, kv.Values, remove_indices[i]);
 					Debug.Log(myu_pi);
 					Debug.LogFormat("al:{0}, bet:{1}", al, bet);
 					Debug.Log(on_boundary);
@@ -195,7 +198,8 @@ public class MAPS : MonoBehaviour {
 		//mesh = TestUtility.generateTestMesh();
 		mmesh = MapsUtility.TransformMesh2MapsMesh(ref mesh, numOfFeaturePoints);
 		
-		Mesh m = RemeshUtility.rebuiltMesh(ref mmesh);
+		//Mesh
+		m = RemeshUtility.rebuiltMesh(ref mmesh);
 		var mf = GetComponent<MeshFilter>();
 		mf.mesh = m;
 
@@ -207,12 +211,14 @@ public class MAPS : MonoBehaviour {
 		if(Input.GetKeyUp(KeyCode.Space)){
 			levelDown();
 			Debug.Log("Level Down");
-			Mesh m = RemeshUtility.rebuiltMesh(ref mmesh);
+			//Mesh 
+			m = RemeshUtility.rebuiltMesh(ref mmesh);
 			var mf = GetComponent<MeshFilter>();
 			mf.mesh = m;
 		}
 		if(Input.GetKeyUp(KeyCode.A)){
-			Mesh m = RemeshUtility.generateBaseMeshByBijection(ref mmesh, ref mesh);
+			//Mesh 
+			m = RemeshUtility.generateBaseMeshByBijection(ref mmesh, ref mesh);
 			var mf = GetComponent<MeshFilter>();
 			mf.mesh = m;
 		}
@@ -222,7 +228,22 @@ public class MAPS : MonoBehaviour {
 		#if UNITY_EDITOR
 		if(mmesh == null){ return; }
 		foreach(Vertex v in mmesh.K.vertices){
-			UnityEditor.Handles.Label(mmesh.P[v.ind], v.ind.ToString());
+			//if(v.ind == 10){
+			//	Debug.LogFormat("heihei{0}", mmesh.P[v.ind]);
+			//}
+			//UnityEditor.Handles.Label(mmesh.P[v.ind], v.ind.ToString());
+		}
+
+		for(int i = 0; i < mmesh.P.Count; i++){
+			//UnityEditor.Handles.Label(mmesh.P[i], i.ToString());
+		}
+
+		for(int i = 0; i < mesh.vertices.Count(); i++){
+			//UnityEditor.Handles.Label(mesh.vertices[i], i.ToString());
+		}
+
+		for(int i = 0; i < m.vertices.Count(); i++){
+			UnityEditor.Handles.Label(m.vertices[i], i.ToString());
 		}
 		#endif
 	}

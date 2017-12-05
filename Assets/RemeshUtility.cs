@@ -23,7 +23,6 @@ public static class RemeshUtility {
 		rebuilted_mesh.RecalculateBounds();
 		rebuilted_mesh.RecalculateNormals();
 		rebuilted_mesh.RecalculateTangents();
-
 		return rebuilted_mesh;
 	}
 
@@ -32,7 +31,6 @@ public static class RemeshUtility {
 		List<int> indices = new List<int>();
 		for(int i = 0; i < verts; i++) indices.Add(i);	
 		List<Vector3> projected_verts = mmesh.getProjectedPoints(indices);
-
 		Mesh m = new Mesh();
 		m.vertices = projected_verts.ToArray();
 		m.triangles = mesh.triangles;

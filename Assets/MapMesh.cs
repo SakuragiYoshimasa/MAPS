@@ -26,16 +26,6 @@ public class MapsMesh {
 			bijection[i].Add(i, 1.0f);
 		}
 	}
-	/* 
-	public List<int> FindBiject(int ind1, int ind2, int ind3){
-		List<int> result = new List<int>();
-
-		for(int i = 0; i < bijection.Count; i++){
-			Dictionary<int, float> b = bijection[i];
-			if(b.ContainsKey(ind1) && b.ContainsKey(ind2) && b.ContainsKey(ind3)) result.Add(i);
-		}
-		return result;
-	}*/
 
 	public List<Vector3> getProjectedPoints(List<int> indices){
 		List<Vector3> projected_points = new List<Vector3>();
@@ -43,13 +33,12 @@ public class MapsMesh {
 		foreach(int ind in indices){
 			Vector3 v = Vector3.zero;
 			Dictionary<int, float> ps = bijection[ind];
-
+			
 			foreach(KeyValuePair<int, float> kv in ps){
 				v += P[kv.Key] * kv.Value;
 			}
 			projected_points.Add(v);
 		}
-
 		return projected_points;
 	}
 

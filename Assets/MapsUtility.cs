@@ -23,15 +23,8 @@ public static class MapsUtility {
 
 			mmaptris.Add(new Triangle(ind1, ind2, ind3));
 		}
-
 		Topologies topo = new Topologies(vs, edges, mmaptris);
 		List<int> fp = makeFeaturePoints(ref mesh, U);
-
-		List<Vector3> vertices = new List<Vector3>(mesh.vertices);
-		for(int i = 0; i < vertices.Count; i++){
-			vertices[i] += new Vector3(Random.Range(-0.05f,0.05f), Random.Range(-0.05f,0.05f),Random.Range(-0.05f,0.05f));
-		}
-
 		return new MapsMesh(new List<Vector3>(mesh.vertices), topo, fp);
 	}
 
