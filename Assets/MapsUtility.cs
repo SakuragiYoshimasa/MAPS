@@ -7,10 +7,10 @@ public static class MapsUtility {
    public static MapsMesh TransformMesh2MapsMesh(ref Mesh mesh, int U){
 
 		int[] tris = mesh.triangles;
-		List<Vertex> vs = new List<Vertex>();
+		List<Vert> vs = new List<Vert>();
 
 		for(int i = 0; i < mesh.vertexCount; i++){
-			vs.Add(new Vertex(i));
+			vs.Add(new Vert(i));
 		}
 
 		List<Triangle> mmaptris = new List<Triangle>();

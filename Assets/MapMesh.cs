@@ -65,21 +65,21 @@ public class MapsMesh {
 }
 
 public struct Topologies {
-	public List<Vertex> vertices;
+	public List<Vert> vertices;
 	public List<Edge> edges;
 	public List<Triangle> triangles;
 
-	public Topologies (List<Vertex> vs, List<Edge> es, List<Triangle> ts){
+	public Topologies (List<Vert> vs, List<Edge> es, List<Triangle> ts){
 		vertices = vs;
 		edges = es;
 		triangles = ts;
 	}
 }
 
-public struct Vertex {
+public struct Vert {
 	public int ind;
 
-	public Vertex (int i){
+	public Vert (int i){
 		ind = i;
 	}
 }

@@ -227,7 +227,7 @@ public class MAPS : MonoBehaviour {
 	void OnDrawGizmos(){
 		#if UNITY_EDITOR
 		if(mmesh == null){ return; }
-		foreach(Vertex v in mmesh.K.vertices){
+		foreach(Vert v in mmesh.K.vertices){
 			//if(v.ind == 10){
 			//	Debug.LogFormat("heihei{0}", mmesh.P[v.ind]);
 			//}

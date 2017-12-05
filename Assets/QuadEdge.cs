@@ -23,15 +23,15 @@ using UnityEngine;
 			}
 		}
 
-		public Vertex Org{
+		public Vert Org{
 			get {
-				return new Vertex(orgdest.ind1);
+				return new Vert(orgdest.ind1);
 			}
 		}
 
-		public Vertex Dest{
+		public Vert Dest{
 			get {
-				return new Vertex(orgdest.ind2);
+				return new Vert(orgdest.ind2);
 			}
 		}
 
