@@ -27,7 +27,7 @@ public static class Utility {
 	}
 
 	//Return a
-	public static float calcMappedRing(MapsMesh mmesh, Vector3 pi, List<int> ring, bool on_boundary,ref List<float> thetas, ref List<float> temp_thetas, ref Dictionary<int, Vector2> mapped_ring, ref bool needCheckStar){
+	public static float calcMappedRing(MapsMesh mmesh, Vector3 pi, List<int> ring, bool on_boundary,ref List<float> thetas, ref List<float> temp_thetas, ref Dictionary<int, Vector2> mapped_ring){
 
 		List<Vector3> ring_vs = new List<Vector3>();
 		thetas = new List<float>();
@@ -50,17 +50,7 @@ public static class Utility {
 				temp_thetas.Add(temp_sum_theta);
 				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
 				float phai = temp_sum_theta * a;				
-				if(mapped_ring.ContainsKey(ring[l])){
-					/*Debug.Log("contain same index");
-					Debug.Log("ring start");
-						foreach(int v in ring){
-							Debug.Log(v);
-					}
-					Debug.Log("ring end");
-					needCheckStar = true;*/
-				}else{
-					mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
-				}
+				mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
 			}
 		} else {
 			//Enforce to be half disc
@@ -69,17 +59,8 @@ public static class Utility {
 			for(int l = 0; l < ring.Count(); l++){
 				float r = Mathf.Pow((pi - ring_vs[l]).magnitude, a);
 				float phai = temp_sum_theta * a;
-				if(mapped_ring.ContainsKey(ring[l])){
-					Debug.Log("contain same index");
-					Debug.Log("ring start");
-						foreach(int v in ring){
-							Debug.Log(v);
-					}
-					Debug.Log("ring end");
-					needCheckStar = true;
-				}else{
-					mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
-				}
+				
+				mapped_ring.Add(ring[l], new Vector2(r * 100.0f * Mathf.Cos(phai), r * 100.0f * Mathf.Sin(phai)));
 				temp_sum_theta += thetas[l];
 				temp_thetas.Add(temp_sum_theta);
 			}
@@ -245,6 +226,9 @@ public static class Utility {
 		if(!on_boundary){
 			ring.RemoveAt(ring.Count - 1);
 		}		
+		if(ring.Count != ring.Distinct().ToArray().Count()){
+			invalid = true;
+		}
 		return ring;	
 	}
 

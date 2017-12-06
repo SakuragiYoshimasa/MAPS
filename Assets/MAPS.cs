@@ -43,7 +43,6 @@ public class MAPS : MonoBehaviour {
 
 		//by the priorities, select the independent set
 		List<int> remove_indices = Utility.makeRemovedIndices(priorities, stars);
-		bool tested = false;
 		//flatten and retriangulation
 		for(int i = 0; i < remove_indices.Count(); i++){
 
@@ -69,15 +68,8 @@ public class MAPS : MonoBehaviour {
 			List<float> temp_thetas = new List<float>();
 			Dictionary<int, Vector2> mapped_ring = new Dictionary<int, Vector2>();
 
-			bool needCheckbool = false;
-			float a = Utility.calcMappedRing(mmesh, pi, ring, on_boundary, ref thetas, ref temp_thetas, ref mapped_ring, ref needCheckbool);
-			/* 
-			if(needCheckbool){
-				foreach(Triangle T0 in star){
-					Debug.LogFormat("T: {0}, {1}, {2}", T0.ind1, T0.ind2, T0.ind3);
-				}	
-			}*/
-
+			float a = Utility.calcMappedRing(mmesh, pi, ring, on_boundary, ref thetas, ref temp_thetas, ref mapped_ring);
+			
 			//Secondly, retriangulation by a constrained Delauney triangulation
 			//In Test, implementation is easy one.
 			if(ring.Count < 3 || ring.Count >= 12){
@@ -91,13 +83,6 @@ public class MAPS : MonoBehaviour {
 				unremoval_indices.Add(remove_indices[i]);
 				continue;
 			}
-			//CDT.retriangulationFromRingByCDT(ring, mapped_ring, on_boundary); 
-			//Utility.retriangulationFromRing(ring, on_boundary);
-			/*if(remove_indices[i] == 18){
-				foreach(Triangle T0 in added_triangles){
-					Debug.LogFormat("T: {0}, {1}, {2}", T0.ind1, T0.ind2, T0.ind3);
-				}
-			}*/
 			mmesh.K.triangles.AddRange(added_triangles);
 			
 			//Finally, remove triangle and remove vertex from mmesh
@@ -124,6 +109,11 @@ public class MAPS : MonoBehaviour {
 				if(kv.Count == 1){
 					//Initialy bijection[vertexIndex]={vertexIndex:1.0}
 					myu_pi = Vector2.zero;
+				}else if(kv.Count == 2){
+					foreach(KeyValuePair<int, float> bb in kv){
+						if(bb.Key == remove_indices[i]) continue;
+						myu_pi = mapped_ring[bb.Key] * bb.Value;
+					}
 				}else if(kv.Count == 3){
 					//３つから構成されている場合
 					for(int l = 0; l < ring.Count(); l++){
@@ -137,7 +127,7 @@ public class MAPS : MonoBehaviour {
 						}
 					}
 				}
-
+				
 				//find triangle which contain myu_pi
 				//For example case 1,
 				//myu_pi = (0,0) and find added triangle contain (0,0)
@@ -154,37 +144,25 @@ public class MAPS : MonoBehaviour {
 				int nloop = 0;
 				while(!found && nloop < 10){
 					foreach(Triangle T in added_triangles){
-
 						Vector2[] points = new Vector2[3]{mapped_ring[T.ind1], mapped_ring[T.ind2], mapped_ring[T.ind3]};
 						if(!MathUtility.checkContain(points, myu_pi)) continue;
-						if(found && !tested && false) {
-							Debug.LogFormat("Bad Alrogi pattern3 {0}", on_boundary);
-							testObj.testMappedRing(mapped_ring.Values.ToList(), myu_pi);
-
-							foreach(int key in mapped_ring.Keys.ToArray()){
-								Debug.LogFormat("Key: {0}", key);
-							}
-
-							foreach(Triangle T0 in added_triangles){
-								Debug.LogFormat("T: {0}, {1}, {2}", T0.ind1, T0.ind2, T0.ind3);
-							}
-							tested = true;
-						}
-						found = true;
 						points = points.Select(p => p - myu_pi).ToArray();
-						double[] param = new double[3]{MathUtility.calcArea(points[1], points[2]), MathUtility.calcArea(points[2], points[0]), MathUtility.calcArea(points[0], points[1])};
+						float[] param = new float[3]{MathUtility.calcArea(points[1], points[2]), MathUtility.calcArea(points[2], points[0]), MathUtility.calcArea(points[0], points[1])};
 						for(int x = 0; x < 3; x++) param[x] = double.IsNaN(param[x]) ? 0 : param[x];
-						double params_sum = param.Sum();
+						float params_sum = param.Sum();  
+						if(params_sum == 0) continue;
 						param = param.Select(p => p / params_sum).ToArray();
 						kv.Clear();
-						kv.Add(T.ind1, (float)(param[0]));
-						kv.Add(T.ind2, (float)(param[1]));
-						kv.Add(T.ind3, (float)(param[2]));
+						if(param[0] != 0) kv.Add(T.ind1, param[0]);
+						if(param[1] != 0) kv.Add(T.ind2, param[1]);
+						if(param[2] != 0) kv.Add(T.ind3, param[2]);
+						found = true;
+						break;
 					}
-					myu_pi += 0.01f * (center - myu_pi);
+					myu_pi += 0.1f * (center - myu_pi);
 					nloop++;
 				}
-				if(!found && false){
+				if(!found){
 					Debug.LogFormat("Not Found! {0}, {1} removing{2}", kv.Keys, kv.Values, remove_indices[i]);
 					Debug.Log(myu_pi);
 					Debug.LogFormat("al:{0}, bet:{1}", al, bet);
@@ -229,7 +207,7 @@ public class MAPS : MonoBehaviour {
 			mf.mesh = m;
 		}
 	}
-
+	/* 
 	void OnDrawGizmos(){
 		#if UNITY_EDITOR
 		if(mmesh == null){ return; }
@@ -252,5 +230,5 @@ public class MAPS : MonoBehaviour {
 			UnityEditor.Handles.Label(m.vertices[i], i.ToString());
 		}
 		#endif
-	}
+	}*/
 }

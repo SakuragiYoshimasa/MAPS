@@ -48,7 +48,7 @@ public static class MathUtility {
 		return (sign1 && sign2 && sign3) || (!sign1 && !sign2 && !sign3);
 	}
 
-	public static double calcArea(Vector2 a, Vector2 b){
+	public static float calcArea(Vector2 a, Vector2 b){
 		return Mathf.Sqrt(Mathf.Pow(a.magnitude, 2.0f) * Mathf.Pow(b.magnitude, 2.0f) - Mathf.Pow(Vector3.Dot(a, b), 2.0f)) * 0.5f;
 	}
 }
